@@ -34,7 +34,19 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
 }
 
 class Worker extends Actor {
-	
+	var tweetsMap = new scala.collection.mutable.HashMap[String, Tweet]()
+	var userTimelineMap = new scala.collection.mutable.HashMap[userId:String,List[Tweet]]()
+	var userFollowerMap = new scala.collection.mutable.HashMap[String,List[String]]()
+	 val tweetcount=0;
+	 
+	 	def fanout(senderId:String,tweetId:String) : Map[String,List[Tweet]]{
+			val followerList = userFollowerMap(senderId)
+			for(followerId <- followerList){
+				//for each follower add the new tweet to its timeline
+				userTimelineMap(followerId).add(tweetsMap(tweetId))				
+			}
+			
+	 	}
 	 
 		def receive = {
 			case ProcessTweet(tweet,senderId,time) ⇒
@@ -45,7 +57,10 @@ class Worker extends Actor {
 				println("Tweet recieved from serverMaster :"+tweet)
 				println("Tweet recieved from serverMaster :"+senderId)
 				println("Tweet recieved from serverMaster :"+time)
-				
+				val tweetId = time+"_"+senderId
+				tweetsMap += (tweetId ->Tweet(tweetId,senderId,time,tweet))
+				fanout(senderId,tweetId) // fanout will associate the tweets with the follower's timeline
+				println("Fanout Completed")
 			}
 		}
 	}
