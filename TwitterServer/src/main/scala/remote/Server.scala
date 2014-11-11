@@ -28,7 +28,8 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
 	  masterActor ! Start 
 	  masterActor ! Message("The Master is alive and started")
 	  masterActor ! Register("abc","uid","pswd")
-      masterActor ! Login("uid","pswd")
+       masterActor ! Login("uid","pswd")
+       masterActor !  TweetFromUser("HelloTwitter","dev001",System.currentTimeMillis) 
 }
 }
 
@@ -36,15 +37,22 @@ class Worker extends Actor {
 	
 	 
 		def receive = {
-			case Tweet(tweet, senderId,time) ⇒
-				println("tweet recieved by worker")
+			case ProcessTweet(tweet,senderId,time) ⇒
+			{
+				// store the tweets in database
+				// associate the tweetId to the followers of the tweet sender
+				//send update to the client
+				println("Tweet recieved from serverMaster :"+tweet)
+				println("Tweet recieved from serverMaster :"+senderId)
+				println("Tweet recieved from serverMaster :"+time)
+				
+			}
 		}
 	}
  
 	class Master(nrOfWorkers: Int, listener: ActorRef)
 	extends Actor {
  
-//		var hashval: java.util.ArrayList[BitCoin] = _ 
 		var nrOfResults: Int = _
 		var nrOfClients: Int = _
 		val start: Long = System.currentTimeMillis
@@ -81,6 +89,9 @@ class Worker extends Actor {
 			case TweetFromUser(tweet,senderId,time) =>
 				{
 					/// send the recieved tweet to the Worker for furhter processing
+					println("Tweet recieved from client :"+tweet)
+					println("Tweet recieved from client :"+senderId)
+					println("Tweet recieved from client :"+time)
 					workerRouter ! ProcessTweet(tweet,senderId,time)
 					// store the tweet from the user in a ArrayList
 					
