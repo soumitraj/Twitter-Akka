@@ -27,83 +27,63 @@ val serverPort = "5150"
 
 }
 
-
-
 class Worker extends Actor {
 	
-		
- 
-		def receive = {
+	def receive = {
 			
-		}
 	}
+}
  
-	class LocalMaster(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int,compString:String, listener: ActorRef)
-	extends Actor {
+class LocalMaster(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int,compString:String, listener: ActorRef)
+extends Actor {
  
-		
-		val workerRouter = context.actorOf(
-		Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
+	val workerRouter = context.actorOf(
+	Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  
-		def receive = {
-			
-			case Result(value) ⇒
-				
+	def receive = {		
 
-				} 
-			}
-		}
+		} 
+	}
+}
 
 	
-	
-	
-	class LocalActor(masterIP: String , masterPort: String) extends Actor {
+class LocalActor(masterIP: String , masterPort: String) extends Actor {
 
-
-  // create the remote actor
+// create the remote actor
 val remoteActorString = "akka.tcp://BtcMasterSystem@"+masterIP+":"+masterPort+"/user/MasterActor"
 
 //println(remoteActorString)
-
 val remote = context.actorFor(remoteActorString)
+var counter = 0
 
-  var counter = 0
+var tweet: String = Random.nextString(140)
 
-  var tweet: String = Random.nextString(140)
-
-  def receive = {
-    case RemoteDetail(remoteActorString) =>
+def receive = {
+  	case RemoteDetail(remoteActorString) =>
 	println("Details recieved : "+remoteActorString)
 	val remote2 = context.actorFor(remoteActorString)
 	println("sending bind request to remote")
 	remote ! BindRequest
-   case Start =>
+   	case Start =>
         remote ! Message("Hello from the LocalActor")
         remote ! BindRequest 
     case BindOK =>
-        sender ! RequestWork
-    case Work(k,nrOfMessages, nrOfElements,compString,prefix) =>
-	println(s"Work recieved :  numner of worers : '$k'  nrOfMessages = '$nrOfMessages' nrOfElements = $nrOfElements and compString = $compString from "+sender)
+      //  sender ! RequestWork
+    
+	// register users
+	for(i <- 1 to 10000)
+		remote ! Register("abc"+i,"user"+i,"pswd"+i)
+
+	// login users
+	for(i <- 1 to 10000)
+		remote ! Login("user"+i,"pswd"+i)	
+
+	// send the generated random tweets to the server
+	for(i <- 1 to 10000)
+		remote ! TweetFromUser(tweet, "user"+i, System.currentTimeMillis)	
 
 	
-	val LocalMaster = context.actorOf(Props(new LocalMaster(
-				k, nrOfMessages, nrOfElements,compString, self)),
-				name = "LocalMaster")
- 
-		LocalMaster ! Calculate
-
-		// send the generated random tweets to the server
-	case TweetFromUser(tweet, senderId, time) =>
-		remote ! TweetFromUser(tweet, "user1", System.currentTimeMillis)	
-
-	
-     //   sender ! WorkResult(calculateBtcFor2(start, nrOfElements,compString,prefix),prefix)
-    case WorkResultRecieved =>
-        println("Client Work completed and recieved by MasterActor")
-     //   println("Client shutting down now!!!")
-    //    context.system.shutdown()
-    case RemoteResult(hashval) =>
-    		remote ! RemoteResult(hashval)
+     
     case Message(msg) => 
         println(s"LocalActor received message: '$msg'")
         if (counter < 5) {
