@@ -35,18 +35,35 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
 
 class Worker extends Actor {
 	var tweetsMap = new scala.collection.mutable.HashMap[String, Tweet]()
-	var userTimelineMap = new scala.collection.mutable.HashMap[userId:String,List[Tweet]]()
+	var homeTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]() // userId, tweetlist
+	var userTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]()
 	var userFollowerMap = new scala.collection.mutable.HashMap[String,List[String]]()
-	 val tweetcount=0;
+	val tweetcount=0;
 	 
-	 	def fanout(senderId:String,tweetId:String) : Map[String,List[Tweet]]{
-			val followerList = userFollowerMap(senderId)
-			for(followerId <- followerList){
+	def populateHomeTimeline(senderId:String,tweetId:String) = {
+
+		val followerList : List[String] = userFollowerMap.get(senderId).get
+			val followerCount: Int = followerList.length
+
+			//for(val followerId:String <- followerList){
+			followerList.map { followerId =>
+				//println(followerId)
 				//for each follower add the new tweet to its timeline
-				userTimelineMap(followerId).add(tweetsMap(tweetId))				
+				var mylist = homeTimelineMap.get(followerId).get 
+
+					mylist.add(tweetsMap(tweetId))				
+					homeTimelineMap += (followerId -> mylist)
 			}
+
+	}
+	 
+	 //  The user timeline contains tweets that the user sent
+//	 def populateUserTimeline(senderId:String,tweetId:String) : Map[String,List[Tweet]] = {
+//
+//			userTimelineMap(senderId).add(tweetsMap(tweetId).get)				
 			
-	 	}
+//	 	}
+	 
 	 
 		def receive = {
 			case ProcessTweet(tweet,senderId,time) ⇒
@@ -58,8 +75,9 @@ class Worker extends Actor {
 				println("Tweet recieved from serverMaster :"+senderId)
 				println("Tweet recieved from serverMaster :"+time)
 				val tweetId = time+"_"+senderId
-				tweetsMap += (tweetId ->Tweet(tweetId,senderId,time,tweet))
-				fanout(senderId,tweetId) // fanout will associate the tweets with the follower's timeline
+				tweetsMap += (tweetId ->Tweet(tweetId,senderId,time))
+			//	populateUserTimeline(senderId,tweetId) // fanout will associate the tweets with the follower's timeline
+				populateHomeTimeline(senderId,tweetId)
 				println("Fanout Completed")
 			}
 		}
@@ -78,6 +96,8 @@ class Worker extends Actor {
 		Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  
 		def receive = {
+		
+		
 			case Register(userFullName,userId,password) ⇒
 				{
 					//the client will send the register message, when the server receives the message it will save the details of the user in a map (userId as key and other details as values) that will be used to autheticate the login request.
@@ -86,6 +106,8 @@ class Worker extends Actor {
 					println(s"$userId registered")
 
 				}
+				
+				
 			case Login(userId,password) ⇒ 
 				{
 				// check the login credentials from the client against the registered ones 
@@ -101,6 +123,7 @@ class Worker extends Actor {
       				}
 				
 				} 
+				
 			case TweetFromUser(tweet,senderId,time) =>
 				{
 					/// send the recieved tweet to the Worker for furhter processing
@@ -112,6 +135,8 @@ class Worker extends Actor {
 					
 					//tweetlist.add(tweet)
 				}	
+				
+				
 			case Follow(sourceUserId,targetUserId) ⇒
 				{
 				   // form the following relationship between source and target.Once source follows the target the source will recieve all the tweets from the targetUSer
