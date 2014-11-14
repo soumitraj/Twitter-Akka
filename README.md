@@ -20,7 +20,9 @@ Client(Simulator) :
     * portion of this user profile that retweet
     * average follower count
     * average following count
-    * average timeline refresh rate ( this is the duration at which the client will request server for tweets/timelines)
+    * average user timeline refresh rate 
+    * average home timeline refresh rate
+    * average mention timeline refresh rate
  * Create millions of users with varying profiles
  * create users and followers
  * pull timelines for each user at a given interval. We will first implement a pull mechanism to fetch timeline. Each user client actor will ask server for timelines based on the last fetch time. 
