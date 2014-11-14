@@ -2,11 +2,16 @@ package local
 
 import akka.actor._
 import common._
+import akka.util._
+import scala.concurrent.duration._
+
 import scala.util.Random
-import java.security.MessageDigest
+
 import akka.routing.RoundRobinRouter
 import java.net.InetAddress
-import java.security.MessageDigest
+
+import scala.concurrent.ExecutionContext.Implicits.global
+
 
 case class RemoteDetail(remoteActorString : String)
 case class Profile(numberoftweetsperday: Int, percentageusers: Double)
@@ -68,7 +73,7 @@ extends Actor {
 }
 */
 	
-class UserActor(masterIP: String , masterPort: String, profiles: List, user : String) extends Actor {
+class UserActor(masterIP: String , masterPort: String, profiles: List[Any], userId : String) extends Actor {
 
 // create the remote actor
 val remoteActorString = "akka.tcp://BtcMasterSystem@"+masterIP+":"+masterPort+"/user/MasterActor"
@@ -78,6 +83,14 @@ val remote = context.actorFor(remoteActorString)
 var counter = 0
 
 var tweet: String = Random.nextString(140)
+var senderId: String = userId
+val time: Long = System.currentTimeMillis
+
+var userFullName: String = _
+var password: String = _
+
+implicit val system = ActorSystem("LocalSystem")
+var schedulor:akka.actor.Cancellable = _
 
 def receive = {
   	case RemoteDetail(remoteActorString) =>
@@ -90,30 +103,38 @@ def receive = {
         remote ! BindRequest 
     case BindOK =>
       //  sender ! RequestWork
+
+    // register users
+	case Register(userFullName,userId,password) =>
+	{
+		remote ! Register(userFullName, userId, password)
+	}
+
+	// login users
+	case Login(userId, password) =>
+	{
+		remote ! Login(userId, password)	
+	}  
     
     case Profile(numberoftweetsperday,percentageusers) =>
     	var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
     	var timepertweet = 1/tweetpermillisecond          // in milliseconds
-    	val cancellable = system.scheduler.schedule(0 milliseconds, timepertweet milliseconds, UserActor, Tweet)
+    	schedulor = context.system.scheduler.schedule(0 millis, timepertweet millis, self, "tickTweet")
+    
+    case "tickTweet" => 
+	{
+    	self!TweetFromUser(tweet,senderId,time)
+    } 	
 
-    case Tweet =>
+    // send the generated random tweets to the server	
+    case TweetFromUser(tweet,senderId,time) => 
+    {
     // send tweet message	
-    //	remote ! TweetFromUser(tweet, "user"+i, System.currentTimeMillis)
+    	remote ! TweetFromUser(tweet, senderId, time)
+	}
 
-	// register users
-	for(i <- 1 to 10000)
-		remote ! Register("abc"+i,"user"+i,"pswd"+i)
-
-	// login users
-	for(i <- 1 to 10000)
-		remote ! Login("user"+i,"pswd"+i)	
-
-	// send the generated random tweets to the server
-
-			
-
-	
-     
+	 
+    
     case Message(msg) => 
         println(s"LocalActor received message: '$msg'")
         if (counter < 5) {

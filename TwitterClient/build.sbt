@@ -1,4 +1,4 @@
-name := "BitcoinMinerClient"
+name := "TwitterClient"
 
 version := "1.0"
 
