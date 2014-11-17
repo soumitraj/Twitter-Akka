@@ -136,7 +136,7 @@ def receive = {
 		remote ! Register(userFullName, userId, password)
 	}
 	
-	case RegisterOK =>
+	case RegistrationOK =>
 	{
 		remote ! Login(userId, password)
 	}
