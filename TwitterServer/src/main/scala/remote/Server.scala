@@ -12,6 +12,7 @@ import scala.collection.JavaConversions._
 
 
 case class ProcessTweet(tweet:String,uid:String,time:Long)
+case class UserDetails(userId:String, userName:String, homeTimelineLastFetchIndex:Int)
 
 object HelloRemote  {
  
@@ -39,6 +40,25 @@ class Worker extends Actor {
 	var userTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]()
 	var userFollowerMap = new scala.collection.mutable.HashMap[String,List[String]]()
 	val tweetcount=0;
+	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
+	
+	def addFollower(sourceUID:String,targetUID:String) = {
+		
+		val followerList : List[String] = userFollowerMap.get(targetUID).get
+		followerList.add(sourceUID)
+		userFollowerMap += (targetUID -> followerList)
+
+	}
+
+	def getHomeTimeline(userID : String) : List[Tweet] = {
+		val homeTimeline = homeTimelineMap.get(userID).get
+		val userDetails = userDetailsMap.get(userID).get
+		var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
+		
+		
+		return unread
+
+	}
 	 
 	def populateHomeTimeline(senderId:String,tweetId:String) = {
 
@@ -49,20 +69,21 @@ class Worker extends Actor {
 			followerList.map { followerId =>
 				//println(followerId)
 				//for each follower add the new tweet to its timeline
-				var mylist = homeTimelineMap.get(followerId).get 
+				var homeTimeline = homeTimelineMap.get(followerId).get 
 
-					mylist.add(tweetsMap(tweetId))				
-					homeTimelineMap += (followerId -> mylist)
+					homeTimeline.add(tweetsMap.get(tweetId).get)				
+					homeTimelineMap += (followerId -> homeTimeline)
 			}
 
 	}
 	 
 	 //  The user timeline contains tweets that the user sent
-//	 def populateUserTimeline(senderId:String,tweetId:String) : Map[String,List[Tweet]] = {
-//
-//			userTimelineMap(senderId).add(tweetsMap(tweetId).get)				
+	 def populateUserTimeline(senderId:String,tweetId:String)  = {
+			var userTimeline = userTimelineMap.get(senderId).get
+			userTimeline.add(tweetsMap.get(tweetId).get)
+			homeTimelineMap += (senderId -> userTimeline)
 			
-//	 	}
+	 	}
 	 
 	 
 		def receive = {

@@ -17,4 +17,6 @@ case class Follow(sourceId:String, targetId: String)
 case class Message(msg: String)
 
 case class ShutdownMaster(message: String)
+
+case class FollowTarget(followerId:String,targetUID :String)
 	
