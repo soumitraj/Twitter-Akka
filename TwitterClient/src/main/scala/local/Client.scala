@@ -50,8 +50,10 @@ object Local {
   			percentusers = profiles(i).percentageusers
 			profileusers = profileusers + (percentusers * totalusers).toInt  
     		for(j <- prev to profileusers)	{
- 				val userActor = system.actorOf(Props(new UserActor(serverIP,serverPort,profiles,"user"+j,j)), name = "UserActor")  // the user actor
+				val username = "user"+j
+ 				val userActor = system.actorOf(Props(new UserActor(serverIP,serverPort,profiles,"user"+j,j)), name = username)  // the user actor
  		 		userActor ! Start                       // start the action
+				userActor ! Register(username, username, "password")
 			}
 		}
 	}
@@ -125,7 +127,7 @@ def receive = {
 	remote ! BindRequest
    	case Start =>
         remote ! Message("Hello from the LocalActor")
-        remote ! BindRequest 
+//        remote ! BindRequest 
     case BindOK =>
       //  sender ! RequestWork
 
@@ -133,6 +135,11 @@ def receive = {
 	case Register(userFullName,userId,password) =>
 	{
 		remote ! Register(userFullName, userId, password)
+	}
+	
+	case RegisterOK =>
+	{
+		remote ! Login(userId, password)
 	}
 
 	// login users

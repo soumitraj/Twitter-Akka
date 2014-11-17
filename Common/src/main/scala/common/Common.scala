@@ -4,6 +4,10 @@ package common
 case object Start // local sends to local to start
 case object BindRequest // local worker sends to master
 case object BindOK
+case object RegistrationOK
+case object LoginOK
+case object TweetProcessedOK
+
 
 
 case class Tweet(tweetId : String,userId:String,time:Long,tweet:String)

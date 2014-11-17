@@ -30,7 +30,7 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
 	  masterActor ! Message("The Master is alive and started")
 	  masterActor ! Register("abc","uid","pswd")
        masterActor ! Login("uid","pswd")
-       masterActor !  TweetFromUser("HelloTwitter","dev001",System.currentTimeMillis) 
+   //    masterActor !  TweetFromUser("HelloTwitter","dev001",System.currentTimeMillis) 
 }
 }
 
@@ -50,15 +50,15 @@ class Worker extends Actor {
 
 	}
 
-	def getHomeTimeline(userID : String) : List[Tweet] = {
-		val homeTimeline = homeTimelineMap.get(userID).get
-		val userDetails = userDetailsMap.get(userID).get
-		var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
-		
-		
-		return unread
-
-	}
+//	def getHomeTimeline(userID : String) : List[Tweet] = {
+//		val homeTimeline = homeTimelineMap.get(userID).get
+//		val userDetails = userDetailsMap.get(userID).get
+//		var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
+//		
+//		
+//		return unread
+//
+//	}
 	 
 	def populateHomeTimeline(senderId:String,tweetId:String) = {
 
@@ -96,7 +96,7 @@ class Worker extends Actor {
 				println("Tweet recieved from serverMaster :"+senderId)
 				println("Tweet recieved from serverMaster :"+time)
 				val tweetId = time+"_"+senderId
-				tweetsMap += (tweetId ->Tweet(tweetId,senderId,time))
+				tweetsMap += (tweetId ->Tweet(tweetId,senderId,time,tweet))
 			//	populateUserTimeline(senderId,tweetId) // fanout will associate the tweets with the follower's timeline
 				populateHomeTimeline(senderId,tweetId)
 				println("Fanout Completed")

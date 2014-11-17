@@ -2,6 +2,7 @@
 *.log
 *.jar
 *~
+*.swp
 
 # sbt specific
 .cache/
