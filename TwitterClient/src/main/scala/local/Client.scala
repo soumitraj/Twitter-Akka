@@ -75,7 +75,6 @@ extends Actor {
 	Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  
 	def receive = {		
-
 		} 
 	}
 }
@@ -167,7 +166,6 @@ def receive = {
 		/*	if(!userfollowingcount.contains(userId)){
 				userfollowingcount += (sourceId -> 0)
 			} 	
-
 			userfollowingcount(sourceId) += 1 */
 		}
 
@@ -242,5 +240,4 @@ def receive = {
   }
 
 }
-
 
