@@ -14,13 +14,15 @@ import scala.collection.JavaConversions._
 case class ProcessTweet(tweet:String,uid:String,time:Long)
 case class UserDetails(userId:String, userName:String, homeTimelineLastFetchIndex:Int)
 
+case object PrintStatistics
+
 object HelloRemote  {
  
 def main(args : Array[String]){
  println("Scala version :: "+util.Properties.versionString)
   
 
-val nrOfWorkers = 2
+val nrOfWorkers = 1
 val system = ActorSystem("BtcMasterSystem")
 val listener = system.actorOf(Props[Listener], name = "listener")
 val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
@@ -28,9 +30,18 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
 
 	  masterActor ! Start 
 	  masterActor ! Message("The Master is alive and started")
-	  masterActor ! Register("abc","uid","pswd")
-       masterActor ! Login("uid","pswd")
-   //    masterActor !  TweetFromUser("HelloTwitter","dev001",System.currentTimeMillis) 
+	  masterActor ! Register("abc","uid1","pswd")
+       masterActor ! Login("uid1","pswd")
+       masterActor !  TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
+	
+	masterActor ! PrintStatistics
+
+	masterActor ! Register("user2","uid2","pswd")
+	masterActor ! Login("uid2","pswd")
+	masterActor ! Follow("uid2","uid1")
+       masterActor !  TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
+
+	masterActor ! PrintStatistics
 }
 }
 
@@ -42,11 +53,23 @@ class Worker extends Actor {
 	val tweetcount=0;
 	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
 	
+	def printTimelines() = {
+		println("tweetsMap: "+tweetsMap)
+		println("home Timelines : "+homeTimelineMap)
+		println("user TimeLine : "+userTimelineMap)
+		println("userFollowerMap : "+userFollowerMap)
+		println("userDetails : "+userDetailsMap)
+	}
+	
 	def addFollower(sourceUID:String,targetUID:String) = {
 		
-		val followerList : List[String] = userFollowerMap.get(targetUID).get
-		followerList.add(sourceUID)
-		userFollowerMap += (targetUID -> followerList)
+		val followerList : List[String] = userFollowerMap.get(targetUID) match {
+							case Some(list) => list
+							case None => List[String]()
+						}
+		val newfollowerList = sourceUID +: followerList
+
+		userFollowerMap += (targetUID -> newfollowerList)
 
 	}
 
@@ -62,16 +85,23 @@ class Worker extends Actor {
 	 
 	def populateHomeTimeline(senderId:String,tweetId:String) = {
 
-		val followerList : List[String] = userFollowerMap.get(senderId).get
+	//	val followerList : List[String] = userFollowerMap.get(senderId).get
+		val followerList : List[String] = userFollowerMap.get(senderId) match {
+							case Some(list) => list
+							case None => List[String]()
+						}
 			val followerCount: Int = followerList.length
-
+			printTimelines()
 			//for(val followerId:String <- followerList){
 			followerList.map { followerId =>
 				//println(followerId)
 				//for each follower add the new tweet to its timeline
-				var homeTimeline = homeTimelineMap.get(followerId).get 
-
-					homeTimeline.add(tweetsMap.get(tweetId).get)				
+				var homeTimeline = homeTimelineMap.get(followerId) match {
+								case Some(timeline) => timeline
+								case None => List[Tweet]()
+							}
+					homeTimeline = tweetsMap.get(tweetId).get +: homeTimeline
+					//homeTimeline.add(tweetsMap.get(tweetId).get)				
 					homeTimelineMap += (followerId -> homeTimeline)
 			}
 
@@ -79,8 +109,12 @@ class Worker extends Actor {
 	 
 	 //  The user timeline contains tweets that the user sent
 	 def populateUserTimeline(senderId:String,tweetId:String)  = {
-			var userTimeline = userTimelineMap.get(senderId).get
-			userTimeline.add(tweetsMap.get(tweetId).get)
+			var userTimeline = userTimelineMap.get(senderId) match {
+						case Some(timeline) => timeline
+						case None => List[Tweet]()
+			}
+			
+			userTimeline = tweetsMap.get(tweetId).get +: userTimeline
 			homeTimelineMap += (senderId -> userTimeline)
 			
 	 	}
@@ -97,9 +131,20 @@ class Worker extends Actor {
 				println("Tweet recieved from serverMaster :"+time)
 				val tweetId = time+"_"+senderId
 				tweetsMap += (tweetId ->Tweet(tweetId,senderId,time,tweet))
-			//	populateUserTimeline(senderId,tweetId) // fanout will associate the tweets with the follower's timeline
+				populateUserTimeline(senderId,tweetId) // fanout will associate the tweets with the follower's timeline
 				populateHomeTimeline(senderId,tweetId)
 				println("Fanout Completed")
+		//		printTimelines()
+			}
+			
+			case Follow(sourceUserId,targetUserId) =>
+			{
+				addFollower(sourceUserId,targetUserId)
+			}
+			
+			case PrintStatistics =>
+			{
+				printTimelines()
 			}
 		}
 	}
@@ -124,6 +169,7 @@ class Worker extends Actor {
 					//the client will send the register message, when the server receives the message it will save the details of the user in a map (userId as key and other details as values) that will be used to autheticate the login request.
 					
 					register += (userId -> password)
+					
 					println(s"$userId registered")
 
 				}
@@ -161,8 +207,15 @@ class Worker extends Actor {
 			case Follow(sourceUserId,targetUserId) ⇒
 				{
 				   // form the following relationship between source and target.Once source follows the target the source will recieve all the tweets from the targetUSer
+					workerRouter ! Follow(sourceUserId,targetUserId)
 
 				}		
+	
+			case PrintStatistics => 
+			{
+				workerRouter ! PrintStatistics
+			}
+				
 			 case Start =>
     				println("Master starting work")
    			 case BindRequest =>
