@@ -140,6 +140,7 @@ class Worker extends Actor {
 			case Follow(sourceUserId,targetUserId) =>
 			{
 				addFollower(sourceUserId,targetUserId)
+				
 			}
 			
 			case PrintStatistics =>
@@ -171,6 +172,7 @@ class Worker extends Actor {
 					register += (userId -> password)
 					
 					println(s"$userId registered")
+					sender ! RegistrationOK
 
 				}
 				
@@ -182,6 +184,7 @@ class Worker extends Actor {
            				
            				if(register(userId) == password) {
            					println("User login successful for "  + userId) 
+						sender ! LoginOK
            				} else {
            					println("UserId and password doesn't match")
            				}
@@ -198,6 +201,7 @@ class Worker extends Actor {
 					println("Tweet recieved from client :"+senderId)
 					println("Tweet recieved from client :"+time)
 					workerRouter ! ProcessTweet(tweet,senderId,time)
+					sender ! TweetProcessedOK
 					// store the tweet from the user in a ArrayList
 					
 					//tweetlist.add(tweet)
@@ -208,6 +212,7 @@ class Worker extends Actor {
 				{
 				   // form the following relationship between source and target.Once source follows the target the source will recieve all the tweets from the targetUSer
 					workerRouter ! Follow(sourceUserId,targetUserId)
+					sender ! FollowingAcceptedOK
 
 				}		
 	
