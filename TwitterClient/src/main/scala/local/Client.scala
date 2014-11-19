@@ -17,6 +17,7 @@ case class RemoteDetail(remoteActorString : String)
 case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcount: Int, 
 	               userTimelineRefreshrate: Int, homeTimelineRefreshrate: Int, mentionTimelineRefreshrate: Int)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
+case class addFollowing(targetId: String)
 case class updateUserTimeline(userId: String)
 case class updateHomeTimeline(userId: String)
 case class updateMentionTimeline(userId: String)
@@ -51,7 +52,9 @@ object Local {
 			profileusers = profileusers + (percentusers * totalusers).toInt  
     		for(j <- prev to profileusers)	{
 				val username = "user"+j
- 				val userActor = system.actorOf(Props(new UserActor(serverIP,serverPort,profiles,"user"+j,j)), name = username)  // the user actor
+ 				val userActor = system.actorOf(Props(new UserActor(serverIP,serverPort,profiles(i),
+ 					      totalusers,"user"+j,j)), 
+ 				          name = username)  // the user actor
  		 		userActor ! Start                       // start the action
 				userActor ! Register(username, username, "password")
 			}
@@ -80,7 +83,8 @@ extends Actor {
 }
 */
 	
-class UserActor(masterIP: String , masterPort: String, profiles: List[Any], userId : String, j: Int) extends Actor {
+class UserActor(masterIP: String , masterPort: String, profileobj: Profile, totalusers: Int,
+	userId: String, j: Int) extends Actor {
 
 // create the remote actor
 val remoteActorString = "akka.tcp://BtcMasterSystem@"+masterIP+":"+masterPort+"/user/MasterActor"
@@ -93,17 +97,22 @@ var tweet: String = Random.nextString(140)
 var senderId: String = userId
 val time: Long = System.currentTimeMillis
 
-var sourceId: String = _
-var targetId: String = userId 
+var sourceId: String = userId
+var targetId: String = _ 
 //var followercount: Int = 5 
-// var userfollowingcount = scala.collection.mutable.HashMap[String, Int]()
 
-/*var Idmap = scala.collection.mutable.HashMap[String, Int]()
-var x: Int = 0
+var followingcount: Int = profileobj.followingcount
+var numberoftweetsperday: Int = profileobj.numberoftweetsperday
+var userTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
+var homeTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
+var mentionTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
+
+var tempcount: Int = _
+
+//var Idmap = scala.collection.mutable.HashMap[String, Int]()
+//var x: Int = 0
 var Id: Int = 0
-for(x <- 1 to 10000) {
-    Idmap += ("user" + x -> 0)
-} */
+
 
 var m: Int = _
 var k: Int = 0
@@ -113,10 +122,11 @@ var password: String = _
 
 
 implicit val system = ActorSystem("LocalSystem")
-var schedulor:akka.actor.Cancellable = _
+var tweetschedulor:akka.actor.Cancellable = _
 var userTimelineschedulor:akka.actor.Cancellable = _
 var homeTimelineschedulor:akka.actor.Cancellable = _
 var mentionTimelineschedulor:akka.actor.Cancellable = _
+var userFollowingschedulor:akka.actor.Cancellable = _
 
 def receive = {
   	case RemoteDetail(remoteActorString) =>
@@ -134,24 +144,42 @@ def receive = {
 	case Register(userFullName,userId,password) =>
 	{
 		remote ! Register(userFullName, userId, password)
+		//self ! RegistrationOK
 	}
 	
 	case RegistrationOK =>
 	{
 		remote ! Login(userId, password)
+		//self ! LoginOK
+	}
+
+	case FollowingAcceptedOK =>
+	{
+		tempcount += 1
+		if(tempcount ==  followingcount)
+		{
+			userFollowingschedulor.cancel()
+		}
 	}
 
 	// login users
-	case Login(userId, password) =>
+	case LoginOK =>
 	{
-		remote ! Login(userId, password)	
+		// assign random following target, using a hashmap of all users, but this operation is costly as the hashmap of all the users need to be created for each actor
+		for( m <- 1 to followingcount) {
+   			Id = Random.nextInt(totalusers + 1)
+    		if(Id == 0){
+    			Id = Random.nextInt(totalusers + 1)
+    		}
+    		targetId = "user" + k
+    		userFollowingschedulor = context.system.scheduler.schedule(0 millis, 50 millis, self, addFollowing(targetId))
+
+  		}   	
 	}  
     
     case Profile(numberoftweetsperday,percentageusers, followercount, followingcount, userTimelineRefreshrate, homeTimelineRefreshrate, mentionTimelineRefreshrate) =>
     {
-    	var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
-    	var timepertweet = 1/tweetpermillisecond          // in milliseconds
-    	schedulor = context.system.scheduler.schedule(0 millis, timepertweet millis, self, "tickTweet")
+    	
 
     	// send followers info
     	for( m <- 1 to followercount) {
@@ -169,36 +197,19 @@ def receive = {
 			userfollowingcount(sourceId) += 1 */
 		}
 
-
-		// assign random followers, using a hashmap of all users, but this operation is costly as the hashmap of all the users need to be created for each actor
-	/*	for( m <- 1 to followercount) {
-   			Id = Random.nextInt(10001)
-    		if(Id == 0){
-    			Id = Random.nextInt(10001)
-    		}
-    		while(Idmap("user"+Id) > 0 || targetId == "user" + Id)
-    		{
-    			Id = Random.nextInt(10001)
-  
-    		}
-    		sourceId = "user" + k
-			remote ! FollowerTarget(sourceId, targetId)
-    
-   			Idmap("user"+ Id) += 1
-  		}   */                                        
-
-		var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
-    	var homeTimelinerate = homeTimelineRefreshrate * 1000
-    	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
-
-    	userTimelineschedulor = context.system.scheduler.schedule(0 millis, userTimelinerate millis, self, updateUserTimeline(userId))
-    	homeTimelineschedulor = context.system.scheduler.schedule(0 millis, homeTimelinerate millis, self, updateHomeTimeline(userId))
-    	mentionTimelineschedulor = context.system.scheduler.schedule(0 millis, mentionTimelinerate millis, self, updateMentionTimeline(userId))
-
-    	// schedulor.cancel()
+		// schedulor.cancel()
 
     }	
+
+    case addFollowing(targetId) =>
+    {
+    	remote ! Follow(sourceId, targetId)
+    }
     
+    var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
+    var timepertweet = 1/tweetpermillisecond          // in milliseconds
+    tweetschedulor = context.system.scheduler.schedule(0 millis, timepertweet millis, self, "tickTweet")
+
     case "tickTweet" => 
 	{
     	self!TweetFromUser(tweet,senderId,time)
@@ -211,15 +222,24 @@ def receive = {
     	remote ! TweetFromUser(tweet, senderId, time)
 	}
 
+	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
+	userTimelineschedulor = context.system.scheduler.schedule(0 millis, userTimelinerate millis, self, updateUserTimeline(userId))
+
 	case updateUserTimeline(userId) =>
 	{
 		remote ! updateUserTimeline(userId)
 	}
 
+	var homeTimelinerate = homeTimelineRefreshrate * 1000
+	homeTimelineschedulor = context.system.scheduler.schedule(0 millis, homeTimelinerate millis, self, updateHomeTimeline(userId))
+
 	case updateHomeTimeline(userId) =>
 	{
 		remote ! updateUserTimeline(userId)
 	}
+
+	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
+	mentionTimelineschedulor = context.system.scheduler.schedule(0 millis, mentionTimelinerate millis, self, updateMentionTimeline(userId))
 
 	case updateMentionTimeline(userId) =>
 	{
@@ -228,7 +248,6 @@ def receive = {
 
 
 	 
-    
     case Message(msg) => 
         println(s"LocalActor received message: '$msg'")
         if (counter < 5) {

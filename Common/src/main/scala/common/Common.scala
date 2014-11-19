@@ -7,7 +7,7 @@ case object BindOK
 case object RegistrationOK
 case object LoginOK
 case object TweetProcessedOK
-
+case object FollowingAcceptedOK
 
 
 case class Tweet(tweetId : String,userId:String,time:Long,tweet:String)
