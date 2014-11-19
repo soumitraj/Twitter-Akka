@@ -180,7 +180,7 @@ class Worker extends Actor {
 			case Login(userId,password) ⇒ 
 				{
 				// check the login credentials from the client against the registered ones 
-					if( register.contains(userId)){
+			//		if( register.contains(userId)){
            				
            			//	if(register(userId) == password) {
            					println("User login successful for "  + userId) 
