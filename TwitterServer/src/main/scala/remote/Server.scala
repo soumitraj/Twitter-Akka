@@ -182,15 +182,15 @@ class Worker extends Actor {
 				// check the login credentials from the client against the registered ones 
 					if( register.contains(userId)){
            				
-           				if(register(userId) == password) {
+           			//	if(register(userId) == password) {
            					println("User login successful for "  + userId) 
 						sender ! LoginOK
-           				} else {
-           					println("UserId and password doesn't match")
-           				}
-      				} else {
-      					println("User is not registered")
-      				}
+           			//	} else {
+           			//		println("UserId and password doesn't match")
+           			//	}
+      			//	} else {
+      			//		println("User is not registered")
+      			//	}
 				
 				} 
 				
