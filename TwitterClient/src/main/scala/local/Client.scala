@@ -32,12 +32,12 @@ object Local {
 		val serverIP = args(0)
 		val serverPort = "5150"
 		val profileobj1 = new Profile(300, 0.6, 100, 10, 30, 30, 30)
-		val profileobj2 = new Profile(100, 0.2, 60, 40, 20, 20, 20)
-		val profileobj3 = new Profile(10, 0.2, 10, 100, 10, 10, 10)
+		val profileobj2 = new Profile(100, 0.2, 60, 20, 20, 20, 20)
+		val profileobj3 = new Profile(10, 0.2, 10, 1, 10, 10, 10)
 		val profiles = List(profileobj1, profileobj2, profileobj3)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 10000
+		val totalusers: Int = 100
 		var i: Int = 0
 		var j: Int = 0
 		var prev: Int = 0
@@ -108,6 +108,7 @@ var homeTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
 var mentionTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
 
 var tempcount: Int = _
+var tempcount2: Int = 0
 
 //var Idmap = scala.collection.mutable.HashMap[String, Int]()
 //var x: Int = 0
@@ -153,31 +154,15 @@ def receive = {
 		//self ! LoginOK
 	}
 
-	case FollowingAcceptedOK =>
-	{
-		tempcount += 1
-		if(tempcount ==  followingcount)
-		{
-			userFollowingschedulor.cancel()
-		}
-	}
 
 	// login users
 	case LoginOK =>
-	{
-		// assign random following target, using a hashmap of all users, but this operation is costly as the hashmap of all the users need to be created for each actor
-		for( m <- 1 to followingcount) {
-   			Id = Random.nextInt(totalusers + 1)
-    		if(Id == 0){
-    			Id = Random.nextInt(totalusers + 1)
-    		}
-    		targetId = "user" + k
-    		userFollowingschedulor = context.system.scheduler.schedule(0 millis, 50 millis, self, addFollowing(targetId))
-
-  		}   	
+	{	
+    		userFollowingschedulor = context.system.scheduler.schedule(0 millis, 50 millis, self, "message")
+ 
 	}  
     
-    case Profile(numberoftweetsperday,percentageusers, followercount, followingcount, userTimelineRefreshrate, homeTimelineRefreshrate, mentionTimelineRefreshrate) =>
+  /*  case Profile(numberoftweetsperday,percentageusers, followercount, followingcount, userTimelineRefreshrate, homeTimelineRefreshrate, mentionTimelineRefreshrate) =>
     {
     	
 
@@ -199,16 +184,35 @@ def receive = {
 
 		// schedulor.cancel()
 
-    }	
+    }	*/
 
-    case addFollowing(targetId) =>
+    case "message" =>
     {
+    	Id = Random.nextInt(totalusers + 1)
+    	targetId = "user" + Id
     	remote ! Follow(sourceId, targetId)
+    /*	followingcount -= 1
+
+    	if(followingcount == 0) {   	
+  			userFollowingschedulor.cancel()
+  		} */
     }
-    
+
+    case FollowingAcceptedOK =>
+	{
+		tempcount += 1
+		if(tempcount ==  followingcount)
+		{
+			userFollowingschedulor.cancel()
+			
+		}
+	} 
+
+
     var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
     var timepertweet = 1/tweetpermillisecond          // in milliseconds
     tweetschedulor = context.system.scheduler.schedule(0 millis, timepertweet millis, self, "tickTweet")
+    tweetschedulor.cancel()
 
     case "tickTweet" => 
 	{
@@ -223,25 +227,25 @@ def receive = {
 	}
 
 	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
-	userTimelineschedulor = context.system.scheduler.schedule(0 millis, userTimelinerate millis, self, updateUserTimeline(userId))
+	userTimelineschedulor = context.system.scheduler.schedule(0 millis, userTimelinerate millis, self, "updateUserTimeline")
 
-	case updateUserTimeline(userId) =>
+	case "updateUserTimeline" =>
 	{
 		remote ! updateUserTimeline(userId)
 	}
 
 	var homeTimelinerate = homeTimelineRefreshrate * 1000
-	homeTimelineschedulor = context.system.scheduler.schedule(0 millis, homeTimelinerate millis, self, updateHomeTimeline(userId))
+	homeTimelineschedulor = context.system.scheduler.schedule(0 millis, homeTimelinerate millis, self, "updateHomeTimeline")
 
-	case updateHomeTimeline(userId) =>
+	case "updateHomeTimeline" =>
 	{
 		remote ! updateUserTimeline(userId)
 	}
 
 	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
-	mentionTimelineschedulor = context.system.scheduler.schedule(0 millis, mentionTimelinerate millis, self, updateMentionTimeline(userId))
+	mentionTimelineschedulor = context.system.scheduler.schedule(0 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
 
-	case updateMentionTimeline(userId) =>
+	case "updateMentionTimeline" =>
 	{
 		remote ! updateUserTimeline(userId)
 	}
