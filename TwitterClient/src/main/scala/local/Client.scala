@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 case class RemoteDetail(remoteActorString : String)
-case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcount: Int, 
+case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcountrate: Int, 
 	               userTimelineRefreshrate: Int, homeTimelineRefreshrate: Int, mentionTimelineRefreshrate: Int)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
 case class addFollowing(targetId: String)
@@ -31,13 +31,14 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(300, 0.6, 100, 10, 30, 30, 30)
-		val profileobj2 = new Profile(100, 0.2, 60, 20, 20, 20, 20)
-		val profileobj3 = new Profile(10, 0.2, 10, 1, 10, 10, 10)
-		val profiles = List(profileobj1, profileobj2, profileobj3)
+		val profileobj1 = new Profile(300, 0.25, 100, 10, 30, 30, 30)
+		val profileobj2 = new Profile(100, 0.25, 60, 10, 20, 20, 20)
+		val profileobj3 = new Profile(10, 0.25, 10, 5, 10, 10, 10)
+		val profileobj4 = new Profile(10, 0.25, 10, 5, 10, 10, 10) 
+		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 100
+		val totalusers: Int = 4
 		var i: Int = 0
 		var j: Int = 0
 		var prev: Int = 0
@@ -101,7 +102,7 @@ var sourceId: String = userId
 var targetId: String = _ 
 //var followercount: Int = 5 
 
-var followingcount: Int = profileobj.followingcount
+var followingcountrate: Int = profileobj.followingcountrate
 var numberoftweetsperday: Int = profileobj.numberoftweetsperday
 var userTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
 var homeTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
@@ -158,74 +159,50 @@ def receive = {
 	// login users
 	case LoginOK =>
 	{	
-    		userFollowingschedulor = context.system.scheduler.schedule(0 millis, 50 millis, self, "message")
- 
+		var followingcountrate = userTimelineRefreshrate * 1000    // convert to millis
+    	userFollowingschedulor = context.system.scheduler.schedule(0 millis, followingcountrate millis, self, "followmessage")
+ 	//	userFollowingschedulor.cancel()
 	}  
-    
-  /*  case Profile(numberoftweetsperday,percentageusers, followercount, followingcount, userTimelineRefreshrate, homeTimelineRefreshrate, mentionTimelineRefreshrate) =>
-    {
-    	
 
-    	// send followers info
-    	for( m <- 1 to followercount) {
-			if(k < 9800){
-				k = j + m
-			} else {
-				k = j - m
-			}
-			sourceId = "user" + k
-			remote ! FollowerTarget(sourceId, targetId)
-
-		/*	if(!userfollowingcount.contains(userId)){
-				userfollowingcount += (sourceId -> 0)
-			} 	
-			userfollowingcount(sourceId) += 1 */
-		}
-
-		// schedulor.cancel()
-
-    }	*/
-
-    case "message" =>
+    case "followmessage" =>
     {
     	Id = Random.nextInt(totalusers + 1)
+    	while(Id == 0){
+    		Id = Random.nextInt(totalusers + 1)
+    	}
     	targetId = "user" + Id
     	remote ! Follow(sourceId, targetId)
-    /*	followingcount -= 1
-
-    	if(followingcount == 0) {   	
-  			userFollowingschedulor.cancel()
-  		} */
+   
     }
 
-    case FollowingAcceptedOK =>
+/*    case FollowingAcceptedOK =>
 	{
-		tempcount += 1
-		if(tempcount ==  followingcount)
+	/*	tempcount += 1
+    	if(tempcount == followingcount)
 		{
-			userFollowingschedulor.cancel()
 			
-		}
+			userFollowingschedulor.cancel()
+		}  */
 	} 
-
+*/
 
     var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
     var timepertweet = 1/tweetpermillisecond          // in milliseconds
     tweetschedulor = context.system.scheduler.schedule(0 millis, timepertweet millis, self, "tickTweet")
-    tweetschedulor.cancel()
+ //   tweetschedulor.cancel()
 
     case "tickTweet" => 
 	{
-    	self!TweetFromUser(tweet,senderId,time)
+    	remote ! TweetFromUser(tweet,senderId,time)
     } 	
 
     // send the generated random tweets to the server	
-    case TweetFromUser(tweet,senderId,time) => 
+ /*   case TweetFromUser(tweet,senderId,time) => 
     {
     // send tweet message	
     	remote ! TweetFromUser(tweet, senderId, time)
 	}
-
+*/
 	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
 	userTimelineschedulor = context.system.scheduler.schedule(0 millis, userTimelinerate millis, self, "updateUserTimeline")
 

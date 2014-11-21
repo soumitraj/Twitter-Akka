@@ -212,9 +212,9 @@ class Worker extends Actor {
 				{
 				   // form the following relationship between source and target.Once source follows the target the source will recieve all the tweets from the targetUSer
 					workerRouter ! Follow(sourceUserId,targetUserId)
-					println(s"$sourceUserId is now following $targetUserId")
+					println(s"$sourceUserId is now following $targetUserId" )
 
-					sender ! FollowingAcceptedOK
+				//	sender ! FollowingAcceptedOK
 
 				}		
 	

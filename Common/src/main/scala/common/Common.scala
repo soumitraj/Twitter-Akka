@@ -17,6 +17,7 @@ case class Login(userId:String,password:String)
                            
 case class Timeline(userId:String,tweetList:List[Tweet])
 case class Follow(sourceId:String, targetId: String)
+// case class Followcount(sourceId:String, targetId: String, tempcount: Int, followingcount: Int)
 
 case class Message(msg: String)
 
