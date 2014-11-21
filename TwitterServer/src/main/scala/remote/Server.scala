@@ -190,7 +190,7 @@ class Worker extends Actor {
            			//	}
       			//	} else {
       			//		println("User is not registered")
-      				}
+      			//	}
 				
 				} 
 				
