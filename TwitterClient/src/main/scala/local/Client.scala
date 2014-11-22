@@ -17,10 +17,9 @@ case class RemoteDetail(remoteActorString : String)
 case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcountrate: Int, 
 	               userTimelineRefreshrate: Int, homeTimelineRefreshrate: Int, mentionTimelineRefreshrate: Int)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
-case class addFollowing(targetId: String)
-case class updateUserTimeline(userId: String)
-case class updateHomeTimeline(userId: String)
-case class updateMentionTimeline(userId: String)
+case class UpdateUserTimeline(userId: String)
+case class UpdateHomeTimeline(userId: String)
+case class UpdateMentionTimeline(userId: String)
 
 
 object Local {
@@ -208,7 +207,7 @@ def receive = {
 
 	case "updateUserTimeline" =>
 	{
-		remote ! updateUserTimeline(userId)
+		remote ! UpdateUserTimeline(userId)
 	}
 
 	var homeTimelinerate = homeTimelineRefreshrate * 1000
@@ -216,7 +215,7 @@ def receive = {
 
 	case "updateHomeTimeline" =>
 	{
-		remote ! updateUserTimeline(userId)
+		remote ! UpdateUserTimeline(userId)
 	}
 
 	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
@@ -224,7 +223,7 @@ def receive = {
 
 	case "updateMentionTimeline" =>
 	{
-		remote ! updateUserTimeline(userId)
+		remote ! UpdateUserTimeline(userId)
 	}
 
 
