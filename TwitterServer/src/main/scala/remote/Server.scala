@@ -217,6 +217,16 @@ class Worker extends Actor {
 				//	sender ! FollowingAcceptedOK
 
 				}		
+
+			case UpdateUserTimeline(userId) => {
+			
+			}
+			case UpdateHomeTimeline(userId) => {
+
+			}
+			case UpdateMentionTimeline(userId) => {
+
+			}
 	
 			case PrintStatistics => 
 			{
