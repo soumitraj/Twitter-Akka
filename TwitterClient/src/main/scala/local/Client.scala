@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 case class RemoteDetail(remoteActorString : String)
-case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcountrate: Int, 
+case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcountrate: Double, 
 	               userTimelineRefreshrate: Int, homeTimelineRefreshrate: Int, mentionTimelineRefreshrate: Int)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
 case class UpdateUserTimeline(userId: String)
@@ -30,14 +30,14 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(300, 0.25, 100, 10, 30, 30, 30)
-		val profileobj2 = new Profile(100, 0.25, 60, 10, 20, 20, 20)
-		val profileobj3 = new Profile(10, 0.25, 10, 5, 10, 10, 10)
-		val profileobj4 = new Profile(10, 0.25, 10, 5, 10, 10, 10) 
+		val profileobj1 = new Profile(3000, 0.4, 100, 0.1, 30, 30, 30)
+		val profileobj2 = new Profile(1000, 0.3, 60, 0.1, 20, 20, 20)
+		val profileobj3 = new Profile(500, 0.2, 10, 0.05, 10, 10, 10)
+		val profileobj4 = new Profile(100, 0.1, 10, 0.05, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 4
+		val totalusers: Int = 10000
 		var i: Int = 0
 		var j: Int = 0
 		var prev: Int = 0
@@ -101,7 +101,7 @@ var sourceId: String = userId
 var targetId: String = _ 
 //var followercount: Int = 5 
 
-var followingcountrate: Int = profileobj.followingcountrate
+var followingcountrate: Double = profileobj.followingcountrate
 var numberoftweetsperday: Int = profileobj.numberoftweetsperday
 var userTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
 var homeTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
