@@ -1,6 +1,11 @@
 package remote
 
+import akka.routing.ConsistentHashingRouter
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.actor._
+import scala.concurrent._
+import akka.pattern.ask
+import akka.util.Timeout
 import common._
 import scala.util.Random
 
@@ -11,21 +16,53 @@ import akka.routing.RoundRobinRouter
 import scala.collection.JavaConversions._
 
 
+
 case class ProcessTweet(tweet:String,uid:String,time:Long)
 case class UserDetails(userId:String, userName:String, homeTimelineLastFetchIndex:Int)
 
+case class PutTweetHomeTimline(userid:String,tweet:Tweet)
+case class PutTweetUserTimline(userid:String,tweet:Tweet)
+case class PutFollowerToUser(targetId:String,followerid:String)
+case class PutTweet(tweetid:String,tweet:Tweet)
+
+case class GetHomeTimeline(userid:String)
+case class GetUserTimeline(userid:String)
+case class GetFollowerList(userid:String)
+case class Entry(key: String, value: String)
+
 case object PrintStatistics
 
-object HelloRemote  {
- 
+
+object TwitterServer {
+
 def main(args : Array[String]){
- println("Scala version :: "+ scala.util.Properties.versionString)
+
+//implicit val timeout = akka.util.Timeout(500)
+println("Scala version :: "+scala.util.Properties.versionString)
   
 
-val nrOfWorkers = 1
+val nrOfWorkers = 10
 val system = ActorSystem("BtcMasterSystem")
 val listener = system.actorOf(Props[Listener], name = "listener")
-val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
+
+
+def hashMapping: ConsistentHashMapping = {
+case Entry(key, _) => key
+case s: String => s
+case PutTweetHomeTimline(userid,tweet) => userid
+case PutTweetUserTimline(userid,tweet) => userid
+case PutFollowerToUser(targetId,followerid) => targetId
+case PutTweet(tweetid,tweet) => tweetid
+case GetHomeTimeline(userid) => userid
+case GetUserTimeline(userid) => userid
+case GetFollowerList(userid) => userid
+}
+
+
+val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
+
+
+val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),
 				name = "MasterActor")
 
 	  masterActor ! Start 
@@ -42,117 +79,54 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener)),
        masterActor !  TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
 
 	masterActor ! PrintStatistics
+
+
 }
+
 }
 
-class Worker extends Actor {
-	var tweetsMap = new scala.collection.mutable.HashMap[String, Tweet]()
-	var homeTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]() // userId, tweetlist
-	var userTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]()
-	var userFollowerMap = new scala.collection.mutable.HashMap[String,List[String]]()
-	val tweetcount=0;
-	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
-	
-	def printTimelines() = {
-		println("tweetsMap: "+tweetsMap)
-		println("home Timelines : "+homeTimelineMap)
-		println("user TimeLine : "+userTimelineMap)
-		println("userFollowerMap : "+userFollowerMap)
-		println("userDetails : "+userDetailsMap)
-	}
-	
-	def addFollower(sourceUID:String,targetUID:String) = {
-		
-		val followerList : List[String] = userFollowerMap.get(targetUID) match {
-							case Some(list) => list
-							case None => List[String]()
-						}
-		val newfollowerList = sourceUID +: followerList
 
-		userFollowerMap += (targetUID -> newfollowerList)
+class Worker(cacheRouter: ActorRef) extends Actor {
 
-	}
+implicit val timeout = akka.util.Timeout(500)
 
-//	def getHomeTimeline(userID : String) : List[Tweet] = {
-//		val homeTimeline = homeTimelineMap.get(userID).get
-//		val userDetails = userDetailsMap.get(userID).get
-//		var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
-//		
-//		
-//		return unread
-//
-//	}
-	 
-	def populateHomeTimeline(senderId:String,tweetId:String) = {
-
-	//	val followerList : List[String] = userFollowerMap.get(senderId).get
-		val followerList : List[String] = userFollowerMap.get(senderId) match {
-							case Some(list) => list
-							case None => List[String]()
-						}
-			val followerCount: Int = followerList.length
-			printTimelines()
-			//for(val followerId:String <- followerList){
-			followerList.map { followerId =>
-				//println(followerId)
-				//for each follower add the new tweet to its timeline
-				var homeTimeline = homeTimelineMap.get(followerId) match {
-								case Some(timeline) => timeline
-								case None => List[Tweet]()
-							}
-					homeTimeline = tweetsMap.get(tweetId).get +: homeTimeline
-					//homeTimeline.add(tweetsMap.get(tweetId).get)				
-					homeTimelineMap += (followerId -> homeTimeline)
-			}
-
-	}
-	 
-	 //  The user timeline contains tweets that the user sent
-	 def populateUserTimeline(senderId:String,tweetId:String)  = {
-			var userTimeline = userTimelineMap.get(senderId) match {
-						case Some(timeline) => timeline
-						case None => List[Tweet]()
-			}
-			
-			userTimeline = tweetsMap.get(tweetId).get +: userTimeline
-			homeTimelineMap += (senderId -> userTimeline)
-			
-	 	}
-	 
-	 
-		def receive = {
-			case ProcessTweet(tweet,senderId,time) ⇒
+	def receive = {
+		case ProcessTweet(tweet,senderId,time) ⇒
 			{
-				// store the tweets in database
-				// associate the tweetId to the followers of the tweet sender
-				//send update to the client
-				println("Tweet recieved from serverMaster :"+tweet)
-				println("Tweet recieved from serverMaster :"+senderId)
-				println("Tweet recieved from serverMaster :"+time)
 				val tweetId = time+"_"+senderId
-				tweetsMap += (tweetId ->Tweet(tweetId,senderId,time,tweet))
-				populateUserTimeline(senderId,tweetId) // fanout will associate the tweets with the follower's timeline
-				populateHomeTimeline(senderId,tweetId)
-				println("Fanout Completed")
-		//		printTimelines()
-			}
-			
-			case Follow(sourceUserId,targetUserId) =>
-			{
-				addFollower(sourceUserId,targetUserId)
+				val objTweet = Tweet(tweetId,senderId,time,tweet)
+				cacheRouter ! PutTweet(tweetId,objTweet)
+				cacheRouter ! PutTweetUserTimline(senderId,objTweet)
+								
+				val future = cacheRouter ? GetFollowerList(senderId)
+				val followerList = Await.result(future, timeout.duration).asInstanceOf[List[String]]
+				
+				followerList.map { followerId =>
+				
+				cacheRouter ! PutTweetHomeTimline(followerId,objTweet)
+				}
 				
 			}
 			
-			case PrintStatistics =>
+		case Follow(sourceUserId,targetUserId) =>
 			{
-				printTimelines()
+				PutFollowerToUser(targetUserId,sourceUserId)
+			
 			}
-		}
+			
+		case PrintStatistics =>
+			{
+//				printTimelines()
+			}
+	
+	
 	}
- 
-	class Master(nrOfWorkers: Int, listener: ActorRef)
+
+}
+
+class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	extends Actor {
- 
+	implicit val timeout = akka.util.Timeout(500)
 		var nrOfResults: Int = _
 		var nrOfClients: Int = _
 		val start: Long = System.currentTimeMillis
@@ -160,7 +134,7 @@ class Worker extends Actor {
 		var tweetlist = new java.util.ArrayList[String]()
  
 		val workerRouter = context.actorOf(
-		Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
+		Props(new Worker(cacheRouter)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  
 		def receive = {
 		
@@ -173,55 +147,41 @@ class Worker extends Actor {
 					
 					println(s"$userId registered")
 					sender ! RegistrationOK
-
+					
 				}
 				
 				
 			case Login(userId,password) ⇒ 
 				{
-				// check the login credentials from the client against the registered ones 
-			//		if( register.contains(userId)){
-           				
-           			//	if(register(userId) == password) {
-           					println("User login successful for "  + userId) 
+					println("User login successful for "  + userId) 
 						sender ! LoginOK
-           			//	} else {
-           			//		println("UserId and password doesn't match")
-           			//	}
-      			//	} else {
-      			//		println("User is not registered")
-      			//	}
 				
 				} 
 				
 			case TweetFromUser(tweet,senderId,time) =>
 				{
-					/// send the recieved tweet to the Worker for furhter processing
-					println("Tweet recieved from client :"+tweet)
-					println("Tweet recieved from client :"+senderId)
-					println("Tweet recieved from client :"+time)
 					workerRouter ! ProcessTweet(tweet,senderId,time)
 					sender ! TweetProcessedOK
-					// store the tweet from the user in a ArrayList
-					
-					//tweetlist.add(tweet)
+
 				}	
 				
 				
-			case Follow(sourceUserId,targetUserId) ⇒
+			case Follow(sourceUserId,targetUserId) =>
 				{
-				   // form the following relationship between source and target.Once source follows the target the source will recieve all the tweets from the targetUSer
 					workerRouter ! Follow(sourceUserId,targetUserId)
-					println(s"$sourceUserId is now following $targetUserId" )
-
-				//	sender ! FollowingAcceptedOK
 
 				}		
 
 			case UpdateUserTimeline(userId) => {
+				val future = cacheRouter ? GetUserTimeline(userId)
+				val userTweetList = Await.result(future, timeout.duration).asInstanceOf[List[Tweet]]
+				sender ! UserTimeline(Timeline(userId,userTweetList))
 			
 			}
 			case UpdateHomeTimeline(userId) => {
+				val future = cacheRouter ? GetHomeTimeline(userId)
+				val homeTweetList = Await.result(future, timeout.duration).asInstanceOf[List[Tweet]]
+				sender ! HomeTimeline(Timeline(userId,homeTweetList))
 
 			}
 			case UpdateMentionTimeline(userId) => {
@@ -243,9 +203,108 @@ class Worker extends Actor {
                   println(s"Master received message "+msg)    	
 				
 			}
+	
+	
+	
+	}
+	
+	class Cache extends Actor {
+
+        println("Cache actor "+self+" Created")
+        
+     var tweetsMap = new scala.collection.mutable.HashMap[String, Tweet]()
+	var homeTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]() // userId, tweetlist
+	var userTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]()
+	var userFollowerMap = new scala.collection.mutable.HashMap[String,List[String]]()
+	val tweetcount=0;
+	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
+
+	var cache = Map.empty[String, String]
+	
+	
+	
+	
+	def receive = {
+		case Entry(key, value) => { cache += (key -> value)
+        		println("Key recieved at "+self)
 		}
- 
-	class Listener extends Actor {
+		
+		case PutTweet(tweetId,tweet) => {
+			tweetsMap += (tweetId -> tweet)
+		
+		}
+		
+		
+		case GetHomeTimeline(userid) => {
+		
+			val homeTimeline = homeTimelineMap.get(userid).get
+			sender ! homeTimeline
+			
+		//val userDetails = userDetailsMap.get(userID).get
+	//	var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
+		
+		
+		//return unread
+		
+		}
+		
+		case GetUserTimeline(userid) => {
+			val userTimeline = userTimelineMap.get(userid).get
+			sender ! userTimeline
+		
+		}
+		
+		case GetFollowerList(userid) => {
+			val userFollowerList = userFollowerMap.get(userid) match {
+					case Some(list) => list
+					case None => List[String]()
+			
+			}
+			sender ! userFollowerList
+		
+		}
+		
+		case PutTweetHomeTimline(userid,tweet) => {
+		
+			val userHomeTimeline = homeTimelineMap.get(userid) match {
+						case Some(timeline) => timeline
+						case None => List[Tweet]()
+			}
+			
+			val newHomeTimeline = tweet +: userHomeTimeline
+			homeTimelineMap += (userid -> newHomeTimeline)
+		
+		}
+		
+		case PutTweetUserTimline(userid,tweet) => {
+		
+				val userTimeline = userTimelineMap.get(userid) match {
+						case Some(timeline) => timeline
+						case None => List[Tweet]()
+			}
+			
+			val newUserTimeline = tweet +: userTimeline
+			userTimelineMap += (userid -> newUserTimeline)
+		
+		
+		}
+		case PutFollowerToUser(targetId,followerid) => {
+		
+			val followerList : List[String] = userFollowerMap.get(targetId) match {
+							case Some(list) => list
+							case None => List[String]()
+						}
+			val newfollowerList = targetId +: followerList
+
+			userFollowerMap += (targetId -> newfollowerList)
+		
+		}
+		case key: String => sender ! cache.get(key).get
+	}
+}
+
+
+class Listener extends Actor {
 		def receive = {
 	
 		case ShutdownMaster(message) ⇒
@@ -254,5 +313,3 @@ class Worker extends Actor {
 			context.system.shutdown() 
 		}
 	}
-
-
