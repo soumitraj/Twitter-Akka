@@ -17,9 +17,6 @@ case class RemoteDetail(remoteActorString : String)
 case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcountrate: Double, 
 	               userTimelineRefreshrate: Int, homeTimelineRefreshrate: Int, mentionTimelineRefreshrate: Int)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
-case class UpdateUserTimeline(userId: String)
-case class UpdateHomeTimeline(userId: String)
-case class UpdateMentionTimeline(userId: String)
 
 
 object Local {
@@ -37,7 +34,7 @@ object Local {
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 500000
+		val totalusers: Int = 100
 		var i: Int = 0
 		var j: Int = 0
 		var prev: Int = 0
@@ -239,4 +236,3 @@ def receive = {
   }
 
 }
-
