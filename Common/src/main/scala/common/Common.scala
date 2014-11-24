@@ -16,6 +16,9 @@ case class Register(userFullName:String,userId:String,password:String)
 case class Login(userId:String,password:String)
                            
 case class Timeline(userId:String,tweetList:List[Tweet])
+case class UserTimeline(timeline:Timeline)
+case class HomeTimeline(timeline:Timeline)
+
 case class Follow(sourceId:String, targetId: String)
 
 case class Message(msg: String)
@@ -27,4 +30,3 @@ case class FollowTarget(followerId:String,targetUID :String)
 case class UpdateUserTimeline(userId: String)
 case class UpdateHomeTimeline(userId: String)
 case class UpdateMentionTimeline(userId: String)
-	

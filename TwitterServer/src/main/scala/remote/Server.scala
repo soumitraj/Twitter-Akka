@@ -19,7 +19,7 @@ case object PrintStatistics
 object HelloRemote  {
  
 def main(args : Array[String]){
- println("Scala version :: "+util.Properties.versionString)
+ println("Scala version :: "+ scala.util.Properties.versionString)
   
 
 val nrOfWorkers = 1
