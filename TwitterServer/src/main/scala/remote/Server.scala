@@ -38,7 +38,7 @@ object TwitterServer {
 def main(args : Array[String]){
 
 //implicit val timeout = akka.util.Timeout(500)
-println("Scala version :: "+scala.util.Properties.versionString)
+//println("Scala version :: "+scala.util.Properties.versionString)
   
 
 val nrOfWorkers = 10
@@ -62,8 +62,9 @@ case GetFollowerList(userid) => userid
 val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
 
 
-val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),
-				name = "MasterActor")
+//val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
+
+val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
 
 	  masterActor ! Start 
 	  masterActor ! Message("The Master is alive and started")
@@ -145,7 +146,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 					
 					register += (userId -> password)
 					
-					println(s"$userId registered")
+					//println(s"$userId registered")
 					sender ! RegistrationOK
 					
 				}
@@ -153,7 +154,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				
 			case Login(userId,password) ⇒ 
 				{
-					println("User login successful for "  + userId) 
+					//println("User login successful for "  + userId) 
 						sender ! LoginOK
 				
 				} 
@@ -210,7 +211,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	
 	class Cache extends Actor {
 
-        println("Cache actor "+self+" Created")
+        //println("Cache actor "+self+" Created")
         
      var tweetsMap = new scala.collection.mutable.HashMap[String, Tweet]()
 	var homeTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]() // userId, tweetlist
@@ -226,7 +227,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	
 	def receive = {
 		case Entry(key, value) => { cache += (key -> value)
-        		println("Key recieved at "+self)
+        		//println("Key recieved at "+self)
 		}
 		
 		case PutTweet(tweetId,tweet) => {
@@ -308,8 +309,7 @@ class Listener extends Actor {
 		def receive = {
 	
 		case ShutdownMaster(message) ⇒
-			println("\n\tShutdown MEssage \t%s"
-			.format(message))
+			println("\n\tShutdown MEssage \t%s".format(message))
 			context.system.shutdown() 
 		}
 	}
