@@ -27,10 +27,10 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(3000, 0.4, 100, 0.1, 30, 30, 30)
-		val profileobj2 = new Profile(1000, 0.3, 60, 0.1, 20, 20, 20)
-		val profileobj3 = new Profile(500, 0.2, 10, 0.05, 10, 10, 10)
-		val profileobj4 = new Profile(100, 0.1, 10, 0.05, 10, 10, 10) 
+		val profileobj1 = new Profile(3000, 0.4, 100, 1, 30, 30, 30)
+		val profileobj2 = new Profile(1000, 0.3, 60, 1, 20, 20, 20)
+		val profileobj3 = new Profile(500, 0.2, 10, 0.5, 10, 10, 10)
+		val profileobj4 = new Profile(100, 0.1, 10, 0.5, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 
 		val profileCount: Int = profiles.length
@@ -156,7 +156,7 @@ def receive = {
 	case LoginOK =>
 	{	
 		var followingcountrate = userTimelineRefreshrate * 1000    // convert to millis
-    	userFollowingschedulor = context.system.scheduler.schedule(0 millis, followingcountrate millis, self, "followmessage")
+    	userFollowingschedulor = context.system.scheduler.schedule(10000 millis, followingcountrate millis, self, "followmessage")
  	//	userFollowingschedulor.cancel()
 	}  
 
@@ -184,7 +184,7 @@ def receive = {
 
     var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
     var timepertweet = 1/tweetpermillisecond          // in milliseconds
-    tweetschedulor = context.system.scheduler.schedule(0 millis, timepertweet millis, self, "tickTweet")
+    tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet millis, self, "tickTweet")
  //   tweetschedulor.cancel()
 
     case "tickTweet" => 
@@ -199,8 +199,14 @@ def receive = {
     	remote ! TweetFromUser(tweet, senderId, time)
 	}
 */
+
+	case TweetProcessedOK =>
+	{
+
+	}
+
 	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
-	userTimelineschedulor = context.system.scheduler.schedule(0 millis, userTimelinerate millis, self, "updateUserTimeline")
+	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelinerate millis, self, "updateUserTimeline")
 
 	case "updateUserTimeline" =>
 	{
@@ -208,7 +214,7 @@ def receive = {
 	}
 
 	var homeTimelinerate = homeTimelineRefreshrate * 1000
-	homeTimelineschedulor = context.system.scheduler.schedule(0 millis, homeTimelinerate millis, self, "updateHomeTimeline")
+	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelinerate millis, self, "updateHomeTimeline")
 
 	case "updateHomeTimeline" =>
 	{
@@ -216,7 +222,7 @@ def receive = {
 	}
 
 	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
-	mentionTimelineschedulor = context.system.scheduler.schedule(0 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
+	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
 
 	case "updateMentionTimeline" =>
 	{
@@ -224,6 +230,15 @@ def receive = {
 	}
 
 
+	case UserTimeline(Timeline(userId,userTweetList)) =>
+	{
+
+	}
+
+	case HomeTimeline(Timeline(userId,homeTweetList)) =>
+	{
+
+	}
 	 
     case Message(msg) => 
         println(s"LocalActor received message: '$msg'")
