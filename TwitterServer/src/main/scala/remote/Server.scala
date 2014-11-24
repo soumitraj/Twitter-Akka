@@ -41,7 +41,7 @@ def main(args : Array[String]){
 //println("Scala version :: "+scala.util.Properties.versionString)
   
 
-val nrOfWorkers = 10
+val nrOfWorkers = java.lang.Integer.parseInt(args(0))
 val system = ActorSystem("BtcMasterSystem")
 val listener = system.actorOf(Props[Listener], name = "listener")
 
