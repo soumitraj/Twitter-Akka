@@ -232,6 +232,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		
 		case PutTweet(tweetId,tweet) => {
 			tweetsMap += (tweetId -> tweet)
+			println(tweetsMap)
 		
 		}
 		

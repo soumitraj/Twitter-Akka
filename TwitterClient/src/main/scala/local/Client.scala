@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 case class RemoteDetail(remoteActorString : String)
-case class Profile(numberoftweetsperday: Int, percentageusers: Double, followercount: Int, followingcountrate: Double, 
+case class Profile(numberoftweetsperday: Double, percentageusers: Double, followercount: Int, followingcountrate: Double, 
 	               userTimelineRefreshrate: Int, homeTimelineRefreshrate: Int, mentionTimelineRefreshrate: Int)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
 
@@ -27,21 +27,26 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(3000, 0.4, 100, 1, 30, 30, 30)
-		val profileobj2 = new Profile(1000, 0.3, 60, 1, 20, 20, 20)
-		val profileobj3 = new Profile(500, 0.2, 10, 0.5, 10, 10, 10)
-		val profileobj4 = new Profile(100, 0.1, 10, 0.5, 10, 10, 10) 
+		val profileobj1 = new Profile(300, 0.4, 100, 1, 30, 30, 30)
+		val profileobj2 = new Profile(100, 0.3, 60, 1, 20, 20, 20)
+		val profileobj3 = new Profile(50, 0.2, 10, 0.5, 10, 10, 10)
+		val profileobj4 = new Profile(10, 0.1, 10, 0.5, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 100
+		val totalusers: Int = 1000
 		var i: Int = 0
 		var j: Int = 0
 		var prev: Int = 0
 		var profileusers: Int = 0
 		var percentusers: Double = 0
 
+
+
   		implicit val system = ActorSystem("LocalSystem")
+
+  		val remoteActorString = "akka.tcp://BtcMasterSystem@"+serverIP+":"+serverPort+"/user/MasterActor"
+		val remote = system.actorFor(remoteActorString)
 
   		for(i <- 0 to profileCount-1) {
   			prev = profileusers + 1
@@ -49,7 +54,7 @@ object Local {
 			profileusers = profileusers + (percentusers * totalusers).toInt  
     		for(j <- prev to profileusers)	{
 				val username = "user"+j
- 				val userActor = system.actorOf(Props(new UserActor(serverIP,serverPort,profiles(i),
+ 				val userActor = system.actorOf(Props(new UserActor(remote,profiles(i),
  					      totalusers,"user"+j,j)), 
  				          name = username)  // the user actor
  		 		userActor ! Start                       // start the action
@@ -80,14 +85,11 @@ extends Actor {
 }
 */
 	
-class UserActor(masterIP: String , masterPort: String, profileobj: Profile, totalusers: Int,
+class UserActor(remote: ActorRef, profileobj: Profile, totalusers: Int,
 	userId: String, j: Int) extends Actor {
 
 // create the remote actor
-val remoteActorString = "akka.tcp://BtcMasterSystem@"+masterIP+":"+masterPort+"/user/MasterActor"
 
-//println(remoteActorString)
-val remote = context.actorFor(remoteActorString)
 var counter = 0
 
 var tweet: String = Random.nextString(140)
@@ -99,7 +101,7 @@ var targetId: String = _
 //var followercount: Int = 5 
 
 var followingcountrate: Double = profileobj.followingcountrate
-var numberoftweetsperday: Int = profileobj.numberoftweetsperday
+var numberoftweetsperday: Double = profileobj.numberoftweetsperday
 var userTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
 var homeTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
 var mentionTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
@@ -133,7 +135,7 @@ def receive = {
 	println("sending bind request to remote")
 	remote ! BindRequest
    	case Start =>
-        remote ! Message("Hello from the LocalActor")
+     //   remote ! Message("Hello from the LocalActor")
 //        remote ! BindRequest 
     case BindOK =>
       //  sender ! RequestWork
@@ -156,7 +158,7 @@ def receive = {
 	case LoginOK =>
 	{	
 		var followingcountrate = userTimelineRefreshrate * 1000    // convert to millis
-    	userFollowingschedulor = context.system.scheduler.schedule(10000 millis, followingcountrate millis, self, "followmessage")
+    	userFollowingschedulor = context.system.scheduler.schedule(5000 millis, followingcountrate millis, self, "followmessage")
  	//	userFollowingschedulor.cancel()
 	}  
 
@@ -206,7 +208,7 @@ def receive = {
 	}
 
 	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
-	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelinerate millis, self, "updateUserTimeline")
+	userTimelineschedulor = context.system.scheduler.schedule(15000 millis, userTimelinerate millis, self, "updateUserTimeline")
 
 	case "updateUserTimeline" =>
 	{
@@ -214,7 +216,7 @@ def receive = {
 	}
 
 	var homeTimelinerate = homeTimelineRefreshrate * 1000
-	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelinerate millis, self, "updateHomeTimeline")
+	homeTimelineschedulor = context.system.scheduler.schedule(20000 millis, homeTimelinerate millis, self, "updateHomeTimeline")
 
 	case "updateHomeTimeline" =>
 	{
@@ -222,7 +224,7 @@ def receive = {
 	}
 
 	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
-	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
+	mentionTimelineschedulor = context.system.scheduler.schedule(25000 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
 
 	case "updateMentionTimeline" =>
 	{
@@ -241,7 +243,7 @@ def receive = {
 	}
 	 
     case Message(msg) => 
-        println(s"LocalActor received message: '$msg'")
+       // println(s"LocalActor received message: '$msg'")
         if (counter < 5) {
             sender ! Message("Hello back to you")
             counter += 1
