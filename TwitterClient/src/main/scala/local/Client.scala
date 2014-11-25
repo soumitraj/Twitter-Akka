@@ -131,18 +131,15 @@ var userFollowingschedulor:akka.actor.Cancellable = _
 
 
     
-    var timepertweet = 60*60/numberoftweetsperminute          // in milliseconds
+    var timepertweet = 60*60/numberoftweetsperminute          // in seconds
     tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
  //   tweetschedulor.cancel()
 	
-	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
-//	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelinerate millis, self, "updateUserTimeline")
+//	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate millis, self, "updateUserTimeline")
 
-	var homeTimelinerate = homeTimelineRefreshrate * 1000
-//	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelinerate millis, self, "updateHomeTimeline")
+//	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate millis, self, "updateHomeTimeline")
 
-	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
-//	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
+//	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelineRefreshrate millis, self, "updateMentionTimeline")
 
 
 def receive = {
