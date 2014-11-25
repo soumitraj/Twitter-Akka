@@ -258,7 +258,6 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			println("Cache :"+tweet)
 			println("Total tweets in cache :" + tweetsMap.size)
 			tweetsMap += (tweetId -> tweet)
-			println(tweetsMap)
 		
 		}
 		
