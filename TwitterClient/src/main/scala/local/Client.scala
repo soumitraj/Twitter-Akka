@@ -35,6 +35,7 @@ object Local {
 
 		val profileCount: Int = profiles.length
 		val totalusers: Int = 1000
+
 		var i: Int = 0
 		var j: Int = 0
 		var prev: Int = 0
@@ -57,7 +58,7 @@ object Local {
  				val userActor = system.actorOf(Props(new UserActor(remote,profiles(i),
  					      totalusers,"user"+j,j)), 
  				          name = username)  // the user actor
- 		 		userActor ! Start                       // start the action
+ 		 		//userActor ! Start                       // start the action
 				userActor ! Register(username, username, "password")
 			}
 		}
@@ -128,12 +129,28 @@ var homeTimelineschedulor:akka.actor.Cancellable = _
 var mentionTimelineschedulor:akka.actor.Cancellable = _
 var userFollowingschedulor:akka.actor.Cancellable = _
 
+
+    var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
+    var timepertweet = 1/tweetpermillisecond          // in milliseconds
+    tweetschedulor = context.system.scheduler.schedule(10000 millis, 5 seconds, self, "tickTweet")
+ //   tweetschedulor.cancel()
+	
+	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
+//	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelinerate millis, self, "updateUserTimeline")
+
+	var homeTimelinerate = homeTimelineRefreshrate * 1000
+//	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelinerate millis, self, "updateHomeTimeline")
+
+	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
+//	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
+
+
 def receive = {
   	case RemoteDetail(remoteActorString) =>
-	println("Details recieved : "+remoteActorString)
-	val remote2 = context.actorFor(remoteActorString)
-	println("sending bind request to remote")
-	remote ! BindRequest
+		println("Details recieved : "+remoteActorString)
+		val remote2 = context.actorFor(remoteActorString)
+		println("sending bind request to remote")
+		remote ! BindRequest
    	case Start =>
      //   remote ! Message("Hello from the LocalActor")
 //        remote ! BindRequest 
@@ -184,10 +201,7 @@ def receive = {
 	} 
 */
 
-    var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
-    var timepertweet = 1/tweetpermillisecond          // in milliseconds
-    tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet millis, self, "tickTweet")
- //   tweetschedulor.cancel()
+
 
     case "tickTweet" => 
 	{
@@ -207,24 +221,17 @@ def receive = {
 
 	}
 
-	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
-	userTimelineschedulor = context.system.scheduler.schedule(15000 millis, userTimelinerate millis, self, "updateUserTimeline")
 
 	case "updateUserTimeline" =>
 	{
 		remote ! UpdateUserTimeline(userId)
 	}
 
-	var homeTimelinerate = homeTimelineRefreshrate * 1000
-	homeTimelineschedulor = context.system.scheduler.schedule(20000 millis, homeTimelinerate millis, self, "updateHomeTimeline")
-
+<
 	case "updateHomeTimeline" =>
 	{
 		remote ! UpdateUserTimeline(userId)
 	}
-
-	var mentionTimelinerate = mentionTimelineRefreshrate * 1000
-	mentionTimelineschedulor = context.system.scheduler.schedule(25000 millis, mentionTimelinerate millis, self, "updateMentionTimeline")
 
 	case "updateMentionTimeline" =>
 	{

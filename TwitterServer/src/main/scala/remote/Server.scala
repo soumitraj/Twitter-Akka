@@ -8,6 +8,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 import common._
 import scala.util.Random
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.security.MessageDigest
 import akka.routing.RoundRobinRouter
@@ -16,6 +18,9 @@ import akka.routing.RoundRobinRouter
 import scala.collection.JavaConversions._
 
 
+//Added by Stuti
+//case class ServerStatistics(userId : String, keyValue: HashMap[Tweet, Int] )
+case class PrintStat(actorName:String, count: Int)
 
 case class ProcessTweet(tweet:String,uid:String,time:Long)
 case class UserDetails(userId:String, userName:String, homeTimelineLastFetchIndex:Int)
@@ -59,7 +64,8 @@ case GetFollowerList(userid) => userid
 }
 
 
-val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
+//val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
+val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(2, hashMapping = hashMapping)),name = "cache")
 
 
 //val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
@@ -89,12 +95,12 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)).
 
 class Worker(cacheRouter: ActorRef) extends Actor {
 
-implicit val timeout = akka.util.Timeout(500)
+implicit val timeout = akka.util.Timeout(5000)
 
 	def receive = {
 		case ProcessTweet(tweet,senderId,time) ⇒
 			{
-				val tweetId = time+"_"+senderId
+				val tweetId = time+"_"+senderId+"_"+Random.nextInt(5000)
 				val objTweet = Tweet(tweetId,senderId,time,tweet)
 				cacheRouter ! PutTweet(tweetId,objTweet)
 				cacheRouter ! PutTweetUserTimline(senderId,objTweet)
@@ -127,13 +133,13 @@ implicit val timeout = akka.util.Timeout(500)
 
 class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	extends Actor {
-	implicit val timeout = akka.util.Timeout(500)
+	implicit val timeout = akka.util.Timeout(5000)
 		var nrOfResults: Int = _
 		var nrOfClients: Int = _
 		val start: Long = System.currentTimeMillis
 		var register = new scala.collection.mutable.HashMap[String, String]()
 		var tweetlist = new java.util.ArrayList[String]()
- 
+ 		var totalTweet:Int = 0;
 		val workerRouter = context.actorOf(
 		Props(new Worker(cacheRouter)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  
@@ -154,13 +160,16 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				
 			case Login(userId,password) ⇒ 
 				{
-					//println("User login successful for "  + userId) 
+					println("User login successful for "  + userId) 
 						sender ! LoginOK
 				
 				} 
 				
 			case TweetFromUser(tweet,senderId,time) =>
 				{
+					totalTweet += 1
+					//print(totalTweet +"\t")
+					println("Recieved "+tweet +"at :"+System.currentTimeMillis)
 					workerRouter ! ProcessTweet(tweet,senderId,time)
 					sender ! TweetProcessedOK
 
@@ -209,7 +218,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	
 	}
 	
-	class Cache extends Actor {
+	class Cache (listener: ActorRef) extends Actor {
 
         //println("Cache actor "+self+" Created")
         
@@ -221,16 +230,33 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
 
 	var cache = Map.empty[String, String]
+	var iTweetsCount=0;
+	//Added by Stuti
+	var getTweetStat:akka.actor.Cancellable = _
+
+	/*val system = ActorSystem("BtcMasterSystem")
+	val listener = system.actorOf(Props[Listener], name = "listener")*/
+	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStat")
 	
-	
-	
-	
+
 	def receive = {
+		//implicit val system = ActorSystem("LocalSystem")
+		
+
+
+		case "printTweetStat" => 
+		{
+			listener ! PrintStat(self.path.name, tweetsMap.size)
+			//iTweetsCount = 0
+		}
+
 		case Entry(key, value) => { cache += (key -> value)
         		//println("Key recieved at "+self)
 		}
 		
 		case PutTweet(tweetId,tweet) => {
+			println("Cache :"+tweet)
+			println("Total tweets in cache :" + tweetsMap.size)
 			tweetsMap += (tweetId -> tweet)
 			println(tweetsMap)
 		
@@ -309,8 +335,15 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 class Listener extends Actor {
 		def receive = {
 	
-		case ShutdownMaster(message) ⇒
-			println("\n\tShutdown MEssage \t%s".format(message))
+/*		case ShutdownMaster(message) ⇒ {
+					println("\n\tShutdown MEssage \t%s".format(message))
 			context.system.shutdown() 
+		}*/
+
+		
+
+		case PrintStat(actorName, count) => {
+			println("TweetCount is " + count + " " + actorName)
 		}
 	}
+}
