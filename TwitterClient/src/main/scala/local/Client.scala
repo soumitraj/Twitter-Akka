@@ -14,8 +14,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 case class RemoteDetail(remoteActorString : String)
-case class Profile(numberoftweetsperday: Double, percentageusers: Double, followercount: Int, followingcountrate: Double, 
-	               userTimelineRefreshrate: Int, homeTimelineRefreshrate: Int, mentionTimelineRefreshrate: Int)      // refresh rate in seconds
+case class Profile(numberoftweetsperminute: Double, percentageusers: Double, followercount: Int, followingcountrate: Double, 
+	               userTimelineRefreshrate: Double, homeTimelineRefreshrate: Double, mentionTimelineRefreshrate: Double)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
 
 
@@ -27,14 +27,14 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(300, 0.4, 100, 1, 30, 30, 30)
-		val profileobj2 = new Profile(100, 0.3, 60, 1, 20, 20, 20)
-		val profileobj3 = new Profile(50, 0.2, 10, 0.5, 10, 10, 10)
+		val profileobj1 = new Profile(40, 0.4, 100, 1, 30, 30, 30)
+		val profileobj2 = new Profile(30, 0.3, 60, 1, 20, 20, 20)
+		val profileobj3 = new Profile(20, 0.2, 10, 0.5, 10, 10, 10)
 		val profileobj4 = new Profile(10, 0.1, 10, 0.5, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 1000
+		val totalusers: Int = 10
 
 		var i: Int = 0
 		var j: Int = 0
@@ -102,10 +102,10 @@ var targetId: String = _
 //var followercount: Int = 5 
 
 var followingcountrate: Double = profileobj.followingcountrate
-var numberoftweetsperday: Double = profileobj.numberoftweetsperday
-var userTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
-var homeTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
-var mentionTimelineRefreshrate: Int = profileobj.userTimelineRefreshrate
+var numberoftweetsperminute: Double = profileobj.numberoftweetsperminute
+var userTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
+var homeTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
+var mentionTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
 
 var tempcount: Int = _
 var tempcount2: Int = 0
@@ -130,9 +130,9 @@ var mentionTimelineschedulor:akka.actor.Cancellable = _
 var userFollowingschedulor:akka.actor.Cancellable = _
 
 
-    var tweetpermillisecond = numberoftweetsperday/24*60*60*1000
-    var timepertweet = 1/tweetpermillisecond          // in milliseconds
-    tweetschedulor = context.system.scheduler.schedule(10000 millis, 5 seconds, self, "tickTweet")
+    
+    var timepertweet = 1/numberoftweetsperminute          // in milliseconds
+    tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
  //   tweetschedulor.cancel()
 	
 	var userTimelinerate = userTimelineRefreshrate * 1000   // convert to milliseconds
@@ -227,7 +227,6 @@ def receive = {
 		remote ! UpdateUserTimeline(userId)
 	}
 
-<
 	case "updateHomeTimeline" =>
 	{
 		remote ! UpdateUserTimeline(userId)
