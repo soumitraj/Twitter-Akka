@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 
 case class RemoteDetail(remoteActorString : String)
-case class Profile(numberoftweetsperminute: Double, percentageusers: Double, followercount: Int, followingcountrate: Double, 
+case class Profile(numberoftweetsperhour: Double, percentageusers: Double, followercount: Int, followingcountrate: Double, 
 	               userTimelineRefreshrate: Double, homeTimelineRefreshrate: Double, mentionTimelineRefreshrate: Double)      // refresh rate in seconds
 case class FollowerTarget(sourceId: String,targetId: String)
 
@@ -56,7 +56,7 @@ object Local {
     		for(j <- prev to profileusers)	{
 				val username = "user"+j
  				val userActor = system.actorOf(Props(new UserActor(remote,profiles(i),
- 					      totalusers,"user"+j,j)), 
+ 					      totalusers,"user"+j+Random.nextInt(50000) ,j)), 
  				          name = username)  // the user actor
  		 		//userActor ! Start                       // start the action
 				userActor ! Register(username, username, "password")
@@ -131,7 +131,7 @@ var userFollowingschedulor:akka.actor.Cancellable = _
 
 
     
-    var timepertweet = 1/numberoftweetsperminute          // in milliseconds
+    var timepertweet = 60*60/numberoftweetsperminute          // in milliseconds
     tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
  //   tweetschedulor.cancel()
 	
