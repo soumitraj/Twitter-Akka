@@ -143,6 +143,8 @@ var userFollowingschedulor:akka.actor.Cancellable = _
 
 //	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelineRefreshrate millis, self, "updateMentionTimeline")
 
+	userFollowingschedulor = context.system.scheduler.schedule(5000 millis, 5000 millis, self, "followmessage")
+
 
 def receive = {
   	case RemoteDetail(remoteActorString) =>
@@ -174,7 +176,7 @@ def receive = {
 	case LoginOK =>
 	{	
 		var followingcountrate = userTimelineRefreshrate * 1000    // convert to millis
-    		userFollowingschedulor = context.system.scheduler.schedule(5000 millis, followingcountrate millis, self, "followmessage")
+    		
  	//	userFollowingschedulor.cancel()
 	}  
 
@@ -192,6 +194,7 @@ def receive = {
     }
     
     case Follow(sourceId,targetUserId) => {
+    		//println(Follow(sourceId,targetUserId))
     	 remote ! Follow(sourceId,targetUserId)
     
     }
@@ -235,7 +238,7 @@ def receive = {
 
 	case "updateHomeTimeline" =>
 	{
-		remote ! UpdateUserTimeline(userId)
+		remote ! UpdateHomeTimeline(userId)
 	}
 
 	case "updateMentionTimeline" =>

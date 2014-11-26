@@ -152,14 +152,17 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
  		var totalTweet:Int = 0;
 		val workerRouter = context.actorOf(
 		Props(new Worker(cacheRouter)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
- 
+ 		var lastUserId:String = ""
 		def receive = {
 		
 			case FetchUserToFollow(sourceId,randNum) => 
 				{
-					val future = cacheRouter ? FetchUserToFollow(sourceId+randNum,randNum)
-					val targetUserId = Await.result(future, timeout.duration).asInstanceOf[String]
-					sender ! Follow(sourceId,targetUserId)
+					//println("fetch users to folow")
+					//val future = cacheRouter ? FetchUserToFollow(sourceId+randNum,randNum)
+					//val targetUserId = Await.result(future, timeout.duration).asInstanceOf[String]
+					//println(targetUserId)
+					//sender ! Follow(sourceId,targetUserId)
+					sender ! Follow(sourceId,lastUserId)
 					
 				}
 		
@@ -184,7 +187,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				} 
 				
 			case TweetFromUser(tweet,senderId,time) =>
-				{
+				{	lastUserId = senderId
 					totalTweet += 1
 					//print(totalTweet +"\t")
 			//		println("Recieved "+tweet +"at :"+System.currentTimeMillis)
@@ -260,7 +263,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	val listener = system.actorOf(Props[Listener], name = "listener")*/
 	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
 	
-	
+
 
 	def receive = {
 		//implicit val system = ActorSystem("LocalSystem")
@@ -301,7 +304,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			
 		//val userDetails = userDetailsMap.get(userID).get
 		//var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
-		var (newTweets,oldTweets) = homeTimeline splitAt 800
+		var (newTweets,oldTweets) = homeTimeline splitAt 400
 		outHomeTweetCount = outHomeTweetCount + newTweets.size
 		
 		 sender ! newTweets
@@ -314,7 +317,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 					case None => List[Tweet]()
 			}
 		 	
-		 	var (newTweets,oldTweets) = userTimeline splitAt 800
+		 	var (newTweets,oldTweets) = userTimeline splitAt 400
 		 	outUserTweetCount = outUserTweetCount + newTweets.size
 			sender ! newTweets
 		
@@ -361,7 +364,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 							case None => List[String]()
 						}
 			if(!followerList.contains(followerid)){
-				println("followerAdded")
+				//println("followerAdded")
 				val newfollowerList = followerid +: followerList
 				userFollowerMap += (targetId -> newfollowerList)
 			}
@@ -430,7 +433,7 @@ class Listener extends Actor {
 			
 			val totalusers = statUserCount.foldLeft(0)(_+_._2)
 			val totalFollowers = followerCountMap.foldLeft(0)(_+_._2)
-			var averageFollowerCount  = 0
+			var averageFollowerCount:Double  = 0.0
 				if(totalusers!=0)
 				{
 					averageFollowerCount = totalFollowers/totalusers
