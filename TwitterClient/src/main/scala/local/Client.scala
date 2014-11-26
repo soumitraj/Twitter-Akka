@@ -102,7 +102,7 @@ var targetId: String = _
 //var followercount: Int = 5 
 
 var followingcountrate: Double = profileobj.followingcountrate
-var numberoftweetsperminute: Double = profileobj.numberoftweetsperminute
+var numberoftweetsperhour: Double = profileobj.numberoftweetsperhour
 var userTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
 var homeTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
 var mentionTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
@@ -131,7 +131,7 @@ var userFollowingschedulor:akka.actor.Cancellable = _
 
 
     
-    var timepertweet = 60*60/numberoftweetsperminute          // in seconds
+    var timepertweet = 60*60/numberoftweetsperhour          // in seconds
     tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
  //   tweetschedulor.cancel()
 	
