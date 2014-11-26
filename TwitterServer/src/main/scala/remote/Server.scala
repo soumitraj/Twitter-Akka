@@ -21,6 +21,8 @@ import scala.collection.JavaConversions._
 //Added by Stuti
 //case class ServerStatistics(userId : String, keyValue: HashMap[Tweet, Int] )
 case class PrintStat(actorName:String, count: Int)
+case class PrintUserStat(actorName:String, count: Int)
+
 
 case class ProcessTweet(tweet:String,uid:String,time:Long)
 case class UserDetails(userId:String, userName:String, homeTimelineLastFetchIndex:Int)
@@ -169,7 +171,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				{
 					totalTweet += 1
 					//print(totalTweet +"\t")
-					println("Recieved "+tweet +"at :"+System.currentTimeMillis)
+			//		println("Recieved "+tweet +"at :"+System.currentTimeMillis)
 					workerRouter ! ProcessTweet(tweet,senderId,time)
 					sender ! TweetProcessedOK
 
@@ -233,10 +235,12 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	var iTweetsCount=0;
 	//Added by Stuti
 	var getTweetStat:akka.actor.Cancellable = _
+	var getUserStat:akka.actor.Cancellable = _
 
 	/*val system = ActorSystem("BtcMasterSystem")
 	val listener = system.actorOf(Props[Listener], name = "listener")*/
 	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStat")
+	getUserStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printUserStat")
 	
 
 	def receive = {
@@ -249,14 +253,21 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			listener ! PrintStat(self.path.name, tweetsMap.size)
 			//iTweetsCount = 0
 		}
+		//Case to get User stats --> total
+		case "printUserStat" => 
+		{
+			listener ! PrintUserStat(self.path.name, userTimelineMap.size)
+			//iTweetsCount = 0
+		}
+
 
 		case Entry(key, value) => { cache += (key -> value)
         		//println("Key recieved at "+self)
 		}
 		
 		case PutTweet(tweetId,tweet) => {
-			println("Cache :"+tweet)
-			println("Total tweets in cache :" + tweetsMap.size)
+			//println("Cache :"+tweet)
+			//println("Total tweets in cache :" + tweetsMap.size)
 			tweetsMap += (tweetId -> tweet)
 		
 		}
@@ -332,6 +343,25 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 
 
 class Listener extends Actor {
+		var statTweetCount = new scala.collection.mutable.HashMap[String, Int]()
+		var prevStatTweetCountMap = new scala.collection.mutable.HashMap[String, Int]()	
+		var printTweetStat:akka.actor.Cancellable = _
+		printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
+
+		var totalTweetCount:Int = 0
+		var prevTotalTweetCount:Int = 0
+		var prevDelta=0
+
+		var statUserCount = new scala.collection.mutable.HashMap[String, Int]()
+		var prevUserTweetCountMap = new scala.collection.mutable.HashMap[String, Int]()	
+//		var printUserStat:akka.actor.Cancellable = _
+//		printUserStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printUserStatistics")
+
+		var totalUserCount:Int = 0
+		var prevTotalUserCount:Int = 0
+		var prevDeltaUser=0
+
+
 		def receive = {
 	
 /*		case ShutdownMaster(message) ⇒ {
@@ -340,9 +370,42 @@ class Listener extends Actor {
 		}*/
 
 		
-
 		case PrintStat(actorName, count) => {
-			println("TweetCount is " + count + " " + actorName)
+			//println("TweetCount is " + count + " " + actorName)
+			totalTweetCount += count
+			statTweetCount += (actorName -> count)
 		}
+
+		case "printTweetStatistics" => 
+		{
+			/*var i: Int = 0
+			for(i <- 0 to statTweetCount.size){
+				print(actorName+" ---" +count + "\t")
+			}*/
+			val delta = totalTweetCount - prevTotalTweetCount
+			//print("new Tweets recieved :"+totalTweetCount)
+			totalTweetCount = 0
+			prevTotalTweetCount = totalTweetCount
+			print("\n Tweets :")
+			statTweetCount.foreach {keyVal => print(keyVal._1 + "=" + keyVal._2 +"\t")}
+			
+			//val delta = totalUserCount - prevTotalUserCount
+			//println("new Users :"+totalUserCount)
+			totalUserCount = 0
+			prevTotalUserCount = totalUserCount
+			print(" Users :")
+			statUserCount.foreach {keyVal => print(keyVal._1 + "=" + keyVal._2 +"\t")}
+
+			//println()
+		}
+
+
+		case PrintUserStat(actorName, count) => {
+			//println("TweetCount is " + count + " " + actorName)
+			totalUserCount += count
+			statUserCount += (actorName -> count)
+		}
+
+		
 	}
 }
