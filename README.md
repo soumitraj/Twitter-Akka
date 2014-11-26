@@ -58,28 +58,28 @@ Instructions to run the program:
 ============
 
 Unzip the file :
-$ unzip Twitter-Akka.zip
-Go to home directory of Twitter-Akka 
-         $ cd Twitter-Akka
+*  $ unzip Twitter-Akka.zip
+*  Go to home directory of Twitter-Akka 
+    *   $ cd Twitter-Akka
 
 For distributed client-server EXECUTION, 
-    First step, Start the server machine,
-         $ cd TwitterServer
-         $ vi src/main/resources/application.conf
+   *  First step, Start the server machine,
+    *   $ cd TwitterServer
+    *   $ vi src/main/resources/application.conf
   In this file application.conf, replace <IP_ADDRESS_OF_SERVER_MACHINE>” with ip address of the host and run the following command:
-         $ sbt "run <No. of Computational Clusters>"
-         Here, you can mention the number of computatonal clusters, each of which consists of a server and 10 workers
-         for example:- 
-         $ sbt “run 6”
+    *   $ sbt "run <No. of Computational Clusters>"
+    * Here, you can mention the number of computatonal clusters, each of which consists of a server and 10 workers
+    *  for example:- 
+    * $ sbt “run 6”
           
   Second step, Start the client machine,
-          $ cd TwitterClient
-          $ vi src/main/resources/application.conf
+     *    $ cd TwitterClient
+     *    $ vi src/main/resources/application.conf
   In this file application.conf, replace <IP_ADDRESS_OF_CLIENT_MACHINE>” with ip address of the client and run the following command:
-          $ sbt “run <IP_ADDRESS_OF_SERVER_MACHINE>” 
-          for example:-
-          $ sbt "run 128.227.170.242"
+   *      $ sbt “run <IP_ADDRESS_OF_SERVER_MACHINE>” 
+   *      for example:-
+   *      $ sbt "run 128.227.170.242"
 
   To stop 
-1, To stop server, press CTRL+C
+ * To stop server, press CTRL+C
        
