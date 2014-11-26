@@ -94,7 +94,8 @@ class UserActor(remote: ActorRef, profileobj: Profile, totalusers: Int,
 
 var counter = 0
 
-var tweet: String = Random.nextString(140)
+//var tweet: String = Random.nextString(140)
+val tweet:String = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Utenimad minim."
 var senderId: String = userId
 val time: Long = System.currentTimeMillis
 
@@ -136,9 +137,9 @@ var userFollowingschedulor:akka.actor.Cancellable = _
     tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
  //   tweetschedulor.cancel()
 	
-//	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate millis, self, "updateUserTimeline")
+	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate millis, self, "updateUserTimeline")
 
-//	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate millis, self, "updateHomeTimeline")
+	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate millis, self, "updateHomeTimeline")
 
 //	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelineRefreshrate millis, self, "updateMentionTimeline")
 
@@ -173,7 +174,7 @@ def receive = {
 	case LoginOK =>
 	{	
 		var followingcountrate = userTimelineRefreshrate * 1000    // convert to millis
-    	userFollowingschedulor = context.system.scheduler.schedule(5000 millis, followingcountrate millis, self, "followmessage")
+    		userFollowingschedulor = context.system.scheduler.schedule(5000 millis, followingcountrate millis, self, "followmessage")
  	//	userFollowingschedulor.cancel()
 	}  
 
@@ -236,14 +237,14 @@ def receive = {
 	}
 
 
-	case UserTimeline(Timeline(userId,userTweetList)) =>
+	case UserTimeline(userTimeline) =>
 	{
-
+		//println("User Timeline Tweets recieved :"+userTimeline.tweetList.size)
 	}
 
-	case HomeTimeline(Timeline(userId,homeTweetList)) =>
+	case HomeTimeline(homeTimeline) =>
 	{
-
+		//println("Home Timeline Tweets recieved :"+homeTimeline.tweetList.size)
 	}
 	 
     case Message(msg) => 

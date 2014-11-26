@@ -21,6 +21,8 @@ case class HomeTimeline(timeline:Timeline)
 
 case class Follow(sourceId:String, targetId: String)
 
+case class FetchUserToFollow(sourceId : String,rand: Int)
+
 case class Message(msg: String)
 
 case class ShutdownMaster(message: String)

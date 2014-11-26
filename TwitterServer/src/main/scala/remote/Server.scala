@@ -22,7 +22,9 @@ import scala.collection.JavaConversions._
 //case class ServerStatistics(userId : String, keyValue: HashMap[Tweet, Int] )
 case class PrintStat(actorName:String, count: Int)
 case class PrintUserStat(actorName:String, count: Int)
-
+case class PrintOutUserTweets(actorName:String, count: Int)
+case class PrintOutHomeTweets(actorName:String, count: Int)
+case class PrintFollowerCount(actorName:String,count: Int)
 
 case class ProcessTweet(tweet:String,uid:String,time:Long)
 case class UserDetails(userId:String, userName:String, homeTimelineLastFetchIndex:Int)
@@ -67,12 +69,12 @@ case GetFollowerList(userid) => userid
 
 
 //val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
-val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(2, hashMapping = hashMapping)),name = "cache")
+val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(8, hashMapping = hashMapping)),name = "cache")
 
 
 //val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
 
-val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
+val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
 
 	  masterActor ! Start 
 	  masterActor ! Message("The Master is alive and started")
@@ -97,7 +99,7 @@ val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)).
 
 class Worker(cacheRouter: ActorRef) extends Actor {
 
-implicit val timeout = akka.util.Timeout(5000)
+implicit val timeout = akka.util.Timeout(500000)
 
 	def receive = {
 		case ProcessTweet(tweet,senderId,time) ⇒
@@ -135,7 +137,7 @@ implicit val timeout = akka.util.Timeout(5000)
 
 class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	extends Actor {
-	implicit val timeout = akka.util.Timeout(5000)
+	implicit val timeout = akka.util.Timeout(500000)
 		var nrOfResults: Int = _
 		var nrOfClients: Int = _
 		val start: Long = System.currentTimeMillis
@@ -146,6 +148,12 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		Props(new Worker(cacheRouter)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  
 		def receive = {
+		
+			case FetchUserToFollow(sourceId,randNum) => 
+				{
+						
+				
+				}
 		
 		
 			case Register(userFullName,userId,password) ⇒
@@ -179,8 +187,8 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				
 				
 			case Follow(sourceUserId,targetUserId) =>
-				{
-					workerRouter ! Follow(sourceUserId,targetUserId)
+				{	if(!sourceUserId.equalsIgnoreCase(targetUserId))
+						workerRouter ! Follow(sourceUserId,targetUserId)
 
 				}		
 
@@ -233,14 +241,17 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 
 	var cache = Map.empty[String, String]
 	var iTweetsCount=0;
+	var outUserTweetCount =0
+	var outHomeTweetCount =0
+	
+	
 	//Added by Stuti
 	var getTweetStat:akka.actor.Cancellable = _
-	var getUserStat:akka.actor.Cancellable = _
 
 	/*val system = ActorSystem("BtcMasterSystem")
 	val listener = system.actorOf(Props[Listener], name = "listener")*/
-	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStat")
-	getUserStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printUserStat")
+	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
+	
 	
 
 	def receive = {
@@ -248,17 +259,16 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		
 
 
-		case "printTweetStat" => 
-		{
-			listener ! PrintStat(self.path.name, tweetsMap.size)
+		case "sendTweetStats" => 
+		{	val actorName = self.path.name
+			listener ! PrintStat(actorName, tweetsMap.size)
+			listener ! PrintUserStat(actorName, userTimelineMap.size)
+			listener ! PrintOutUserTweets(actorName,outUserTweetCount)
+			listener ! PrintOutHomeTweets(actorName,outHomeTweetCount)
+			listener ! PrintFollowerCount(actorName,userFollowerMap.foldLeft(0)(_+_._2.size))
 			//iTweetsCount = 0
 		}
-		//Case to get User stats --> total
-		case "printUserStat" => 
-		{
-			listener ! PrintUserStat(self.path.name, userTimelineMap.size)
-			//iTweetsCount = 0
-		}
+		
 
 
 		case Entry(key, value) => { cache += (key -> value)
@@ -275,20 +285,30 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		
 		case GetHomeTimeline(userid) => {
 		
-			val homeTimeline = homeTimelineMap.get(userid).get
-			sender ! homeTimeline
+			val homeTimeline = homeTimelineMap.get(userid) match {
+				case Some(list) => list
+				case None => List[Tweet]()
+			}
+		//	sender ! homeTimeline
 			
 		//val userDetails = userDetailsMap.get(userID).get
-	//	var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
+		//var (read,unread) = splitAt userDetails.homeTimelineLastFetchIndex
+		var (newTweets,oldTweets) = homeTimeline splitAt 800
+		outHomeTweetCount = outHomeTweetCount + newTweets.size
 		
-		
-		//return unread
+		 sender ! newTweets
 		
 		}
 		
 		case GetUserTimeline(userid) => {
-			val userTimeline = userTimelineMap.get(userid).get
-			sender ! userTimeline
+			val userTimeline = userTimelineMap.get(userid) match {
+					case Some(list) => list
+					case None => List[Tweet]()
+			}
+		 	
+		 	var (newTweets,oldTweets) = userTimeline splitAt 800
+		 	outUserTweetCount = outUserTweetCount + newTweets.size
+			sender ! newTweets
 		
 		}
 		
@@ -332,9 +352,11 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 							case Some(list) => list
 							case None => List[String]()
 						}
-			val newfollowerList = targetId +: followerList
-
-			userFollowerMap += (targetId -> newfollowerList)
+			if(!followerList.contains(followerid)){
+				println("followerAdded")
+				val newfollowerList = followerid +: followerList
+				userFollowerMap += (targetId -> newfollowerList)
+			}
 		
 		}
 		case key: String => sender ! cache.get(key).get
@@ -345,6 +367,15 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 class Listener extends Actor {
 		var statTweetCount = new scala.collection.mutable.HashMap[String, Int]()
 		var prevStatTweetCountMap = new scala.collection.mutable.HashMap[String, Int]()	
+		var statUserCount = new scala.collection.mutable.HashMap[String, Int]()
+		var prevUserTweetCountMap = new scala.collection.mutable.HashMap[String, Int]()
+		
+		var outUserTweetCountMap = new scala.collection.mutable.HashMap[String, Int]()
+		var outHomeTweetCountMap = new scala.collection.mutable.HashMap[String, Int]()
+		var followerCountMap     = new scala.collection.mutable.HashMap[String, Int]()
+		
+		
+		
 		var printTweetStat:akka.actor.Cancellable = _
 		printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
 
@@ -352,10 +383,7 @@ class Listener extends Actor {
 		var prevTotalTweetCount:Int = 0
 		var prevDelta=0
 
-		var statUserCount = new scala.collection.mutable.HashMap[String, Int]()
-		var prevUserTweetCountMap = new scala.collection.mutable.HashMap[String, Int]()	
-//		var printUserStat:akka.actor.Cancellable = _
-//		printUserStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printUserStatistics")
+			
 
 		var totalUserCount:Int = 0
 		var prevTotalUserCount:Int = 0
@@ -386,17 +414,32 @@ class Listener extends Actor {
 			//print("new Tweets recieved :"+totalTweetCount)
 			totalTweetCount = 0
 			prevTotalTweetCount = totalTweetCount
-			print("\n Tweets :")
-			statTweetCount.foreach {keyVal => print(keyVal._1 + "=" + keyVal._2 +"\t")}
+			
+			val totalusers = statUserCount.foldLeft(0)(_+_._2)
+			val totalFollowers = followerCountMap.foldLeft(0)(_+_._2)
+			var averageFollowerCount  = 0
+				if(totalusers!=0)
+				{
+					averageFollowerCount = totalFollowers/totalusers
+				}
+			print("\nTweets In:"+statTweetCount.foldLeft(0)(_+_._2))
+			print(" Users :"+totalusers)
+			print(" UserTimelineTweets :"+outUserTweetCountMap.foldLeft(0)(_+_._2))
+			print(" HomeTimelineTweets :"+outHomeTweetCountMap.foldLeft(0)(_+_._2))
+			print(" AvgFollowerCount :"+averageFollowerCount)
+			
+			
+			/**statTweetCount.foreach {keyVal => print(keyVal._1 + "=" + keyVal._2 +"\t")}
 			
 			//val delta = totalUserCount - prevTotalUserCount
 			//println("new Users :"+totalUserCount)
 			totalUserCount = 0
 			prevTotalUserCount = totalUserCount
-			print(" Users :")
-			statUserCount.foreach {keyVal => print(keyVal._1 + "=" + keyVal._2 +"\t")}
+			print(" Users :"+statUserCount.foldLeft(0)(_+_._2))
+			//statUserCount.foreach {keyVal => print(keyVal._1 + "=" + keyVal._2 +"\t")}
 
 			//println()
+			*/
 		}
 
 
@@ -404,6 +447,18 @@ class Listener extends Actor {
 			//println("TweetCount is " + count + " " + actorName)
 			totalUserCount += count
 			statUserCount += (actorName -> count)
+		}
+		
+		case PrintOutUserTweets(actorName,count) => {
+			outUserTweetCountMap += (actorName -> count)
+		}
+		
+		case PrintOutHomeTweets(actorName,count) => {
+			outHomeTweetCountMap += (actorName -> count)
+		}
+		
+		case PrintFollowerCount(actorName,count) => {
+			followerCountMap += (actorName -> count)
 		}
 
 		
