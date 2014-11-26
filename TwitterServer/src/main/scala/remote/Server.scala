@@ -121,9 +121,15 @@ implicit val timeout = akka.util.Timeout(500000)
 			
 		case Follow(sourceUserId,targetUserId) =>
 			{
-				PutFollowerToUser(targetUserId,sourceUserId)
+				cacheRouter ! PutFollowerToUser(targetUserId,sourceUserId)
 			
 			}
+		
+		case FetchUserToFollow(sourceId,randNum) => {
+			//cacheRouter ! FetchUserToFollow(sourceId+randNum,randNum)
+			
+			
+		}
 			
 		case PrintStatistics =>
 			{
@@ -151,8 +157,10 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		
 			case FetchUserToFollow(sourceId,randNum) => 
 				{
-						
-				
+					val future = cacheRouter ? FetchUserToFollow(sourceId+randNum,randNum)
+					val targetUserId = Await.result(future, timeout.duration).asInstanceOf[String]
+					sender ! Follow(sourceId,targetUserId)
+					
 				}
 		
 		
@@ -357,6 +365,11 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				val newfollowerList = followerid +: followerList
 				userFollowerMap += (targetId -> newfollowerList)
 			}
+		
+		}
+		
+		case FetchUserToFollow(randKeyString,radnId) => {
+			sender ! userTimelineMap.keySet.head
 		
 		}
 		case key: String => sender ! cache.get(key).get
