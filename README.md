@@ -1,4 +1,10 @@
-HelloTwitter
+                   README – DOS PROJECT 4 - Part 1
+TEAM MEMBERS: 
+Name: Soumitra Siddharth Johri    UFID: 94654015
+Name: Nithin K Vadyala            UFID: 23716353
+Name:                             UFID:
+
+Twitter-Akka
 ============
 
 Description:
@@ -26,7 +32,6 @@ Client(Simulator) :
  * Create millions of users with varying profiles
  * create users and followers
  * pull timelines for each user at a given interval. We will first implement a pull mechanism to fetch timeline. Each user client actor will ask server for timelines based on the last fetch time. 
- * The user tweets should be marked as ReTweet Yes/No. If a tweet is marked as ReTweet=Yes then it will be Retweeted by its followers depdending on the userprofile.
  * Record client statistics
  
 Server :
@@ -47,3 +52,34 @@ Performance Server :
  * display the gathered performance counter on screen at fixed intervals
  
 Also, this project should be tested with Docker as well. 
+
+
+Instructions to run the program:
+============
+
+Unzip the file :
+$ unzip Twitter-Akka.zip
+Go to home directory of Twitter-Akka 
+         $ cd Twitter-Akka
+
+For distributed client-server EXECUTION, 
+    First step, Start the server machine,
+         $ cd TwitterServer
+         $ vi src/main/resources/application.conf
+  In this file application.conf, replace <IP_ADDRESS_OF_SERVER_MACHINE>” with ip address of the host and run the following command:
+         $ sbt "run <No. of Computational Clusters>"
+         Here, you can mention the number of computatonal clusters, each of which consists of a server and 10 workers
+         for example:- 
+         $ sbt “run 6”
+          
+  Second step, Start the client machine,
+          $ cd TwitterClient
+          $ vi src/main/resources/application.conf
+  In this file application.conf, replace <IP_ADDRESS_OF_CLIENT_MACHINE>” with ip address of the client and run the following command:
+          $ sbt “run <IP_ADDRESS_OF_SERVER_MACHINE>” 
+          for example:-
+          $ sbt "run 128.227.170.242"
+
+  To stop 
+1, To stop server, press CTRL+C
+       
