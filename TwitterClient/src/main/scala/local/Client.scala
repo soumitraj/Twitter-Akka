@@ -27,14 +27,15 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(40, 0.4, 100, 1, 30, 30, 30)
-		val profileobj2 = new Profile(30, 0.3, 60, 1, 20, 20, 20)
-		val profileobj3 = new Profile(20, 0.2, 10, 0.5, 10, 10, 10)
-		val profileobj4 = new Profile(10, 0.1, 10, 0.5, 10, 10, 10) 
+		val profileobj1 = new Profile(400000000, 0.4, 100, 1, 30, 30, 30)
+		val profileobj2 = new Profile(30000, 0.3, 60, 1, 20, 20, 20)
+		val profileobj3 = new Profile(20000, 0.2, 10, 0.5, 10, 10, 10)
+		val profileobj4 = new Profile(1000000, 0.1, 10, 0.5, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
+	//	val profiles = List(profileobj1)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 10
+		val totalusers: Int = 100
 
 		var i: Int = 0
 		var j: Int = 0

@@ -162,7 +162,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				
 			case Login(userId,password) ⇒ 
 				{
-					println("User login successful for "  + userId) 
+					//println("User login successful for "  + userId) 
 						sender ! LoginOK
 				
 				} 
