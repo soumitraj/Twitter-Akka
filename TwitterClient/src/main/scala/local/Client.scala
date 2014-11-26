@@ -185,8 +185,15 @@ def receive = {
     		Id = Random.nextInt(totalusers + 1)
     	}
     	targetId = "user" + Id
-    	remote ! Follow(sourceId, targetId)
+    //	println("Follow :"+ sourceId + " -> " +targetId)
+    	remote ! FetchUserToFollow(sourceId,Id)
+    	//remote ! Follow(sourceId, targetId)
    
+    }
+    
+    case Follow(sourceId,targetUserId) => {
+    	 remote ! Follow(sourceId,targetUserId)
+    
     }
 
 /*    case FollowingAcceptedOK =>
