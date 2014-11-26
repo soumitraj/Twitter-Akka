@@ -10,6 +10,7 @@ import common._
 import scala.util.Random
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.ArrayList
 
 import java.security.MessageDigest
 import akka.routing.RoundRobinRouter
@@ -249,6 +250,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	var userFollowerMap = new scala.collection.mutable.HashMap[String,List[String]]()
 	val tweetcount=0;
 	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
+	var userArrayList = new java.util.ArrayList[String]()
 
 	var cache = Map.empty[String, String]
 	var iTweetsCount=0;
@@ -434,14 +436,16 @@ class Listener extends Actor {
 			val totalusers = statUserCount.foldLeft(0)(_+_._2)
 			val totalFollowers = followerCountMap.foldLeft(0)(_+_._2)
 			var averageFollowerCount:Double  = 0.0
+			
 				if(totalusers!=0)
 				{
-					averageFollowerCount = totalFollowers/totalusers
+					averageFollowerCount = totalFollowers*1.0/totalusers
 				}
 			print("\nTweets In:"+statTweetCount.foldLeft(0)(_+_._2))
 			print(" Users :"+totalusers)
 			print(" UserTimelineTweets :"+outUserTweetCountMap.foldLeft(0)(_+_._2))
 			print(" HomeTimelineTweets :"+outHomeTweetCountMap.foldLeft(0)(_+_._2))
+			print(" FollowerCount :" +totalFollowers)
 			print(" AvgFollowerCount :"+averageFollowerCount)
 			
 			

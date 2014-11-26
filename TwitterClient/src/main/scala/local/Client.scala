@@ -5,6 +5,7 @@ import common._
 import akka.util._
 import scala.concurrent.duration._
 
+
 import scala.util.Random
 
 import akka.routing.RoundRobinRouter
@@ -27,15 +28,15 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(400000000, 0.4, 100, 1, 30, 30, 30)
+		val profileobj1 = new Profile(40000, 0.4, 100, 1, 30, 30, 30)
 		val profileobj2 = new Profile(30000, 0.3, 60, 1, 20, 20, 20)
 		val profileobj3 = new Profile(20000, 0.2, 10, 0.5, 10, 10, 10)
-		val profileobj4 = new Profile(1000000, 0.1, 10, 0.5, 10, 10, 10) 
+		val profileobj4 = new Profile(10000, 0.1, 10, 0.5, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 	//	val profiles = List(profileobj1)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 100
+		val totalusers: Int = 10000
 
 		var i: Int = 0
 		var j: Int = 0
@@ -60,7 +61,7 @@ object Local {
  					      totalusers,"user"+j+Random.nextInt(50000) ,j)), 
  				          name = username)  // the user actor
  		 		//userActor ! Start                       // start the action
-				userActor ! Register(username, username, "password")
+				//userActor ! Register(username, username, "password")
 			}
 		}
 	}
@@ -124,7 +125,7 @@ var userFullName: String = _
 var password: String = _
 
 
-implicit val system = ActorSystem("LocalSystem")
+//implicit val system = ActorSystem("LocalSystem")
 var tweetschedulor:akka.actor.Cancellable = _
 var userTimelineschedulor:akka.actor.Cancellable = _
 var homeTimelineschedulor:akka.actor.Cancellable = _
