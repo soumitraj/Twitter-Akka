@@ -109,7 +109,7 @@ implicit val timeout = akka.util.Timeout(500000)
 				val objTweet = Tweet(tweetId,senderId,time,tweet)
 				cacheRouter ! PutTweet(tweetId,objTweet)
 				cacheRouter ! PutTweetUserTimline(senderId,objTweet)
-								
+				
 				val future = cacheRouter ? GetFollowerList(senderId)
 				val followerList = Await.result(future, timeout.duration).asInstanceOf[List[String]]
 				
@@ -292,9 +292,12 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			//println("Cache :"+tweet)
 			//println("Total tweets in cache :" + tweetsMap.size)
 			tweetsMap += (tweetId -> tweet)
-		
+			for ((key, value) <- tweetsMap) {	
+				if(value.tweet contains "ipsum" ) {
+					println (key +"-->"+ value.tweet) 
+				}
+			}	
 		}
-		
 		
 		case GetHomeTimeline(userid) => {
 		
