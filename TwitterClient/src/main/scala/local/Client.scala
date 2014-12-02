@@ -36,7 +36,7 @@ object Local {
 	//	val profiles = List(profileobj1)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 10000
+		val totalusers: Int = 100
 
 		var i: Int = 0
 		var j: Int = 0
@@ -102,16 +102,16 @@ val time: Long = System.currentTimeMillis
 
 var sourceId: String = userId
 var targetId: String = _ 
-//var followercount: Int = 5 
-
-var followingcountrate: Double = profileobj.followingcountrate
-var numberoftweetsperhour: Double = profileobj.numberoftweetsperhour
 var userTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
 var homeTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
 var mentionTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
 
 var tempcount: Int = _
 var tempcount2: Int = 0
+//var followercount: Int = 5 
+
+var followingcountrate: Double = profileobj.followingcountrate
+var numberoftweetsperhour: Double = profileobj.numberoftweetsperhour
 
 //var Idmap = scala.collection.mutable.HashMap[String, Int]()
 //var x: Int = 0
@@ -138,9 +138,9 @@ var userFollowingschedulor:akka.actor.Cancellable = _
     tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
  //   tweetschedulor.cancel()
 	
-	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate millis, self, "updateUserTimeline")
+	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate seconds, self, "updateUserTimeline")
 
-	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate millis, self, "updateHomeTimeline")
+	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate seconds, self, "updateHomeTimeline")
 
 //	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelineRefreshrate millis, self, "updateMentionTimeline")
 
