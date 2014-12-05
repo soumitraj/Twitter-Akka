@@ -76,7 +76,7 @@ case GetFollowerList(userid) => userid
 //val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
 val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(10*nrOfWorkers, hashMapping = hashMapping)),name = "cache")
 
-val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(RoundRobinRouter(10*nrOfWorkers)),name="cache")
+val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(RoundRobinRouter(10*nrOfWorkers)),name="parser")
 //val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
 
 val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
