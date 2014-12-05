@@ -40,6 +40,10 @@ case class GetUserTimeline(userid:String)
 case class GetFollowerList(userid:String)
 case class Entry(key: String, value: String)
 
+case class TokenizeTweet(tweet:Tweet)
+case class PutTweetAgainstToken(token:String,tweet:Tweet)
+case class GetTweetsAgainstToken(token:String)
+case class SearchToken(token:String)
 case object PrintStatistics
 
 
@@ -70,9 +74,9 @@ case GetFollowerList(userid) => userid
 
 
 //val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
-val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(8, hashMapping = hashMapping)),name = "cache")
+val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(10*nrOfWorkers, hashMapping = hashMapping)),name = "cache")
 
-
+val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(RoundRobinRouter(10*nrOfWorkers)),name="cache")
 //val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
 
 val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
@@ -98,6 +102,7 @@ val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRoute
 }
 
 
+
 class Worker(cacheRouter: ActorRef) extends Actor {
 
 implicit val timeout = akka.util.Timeout(500000)
@@ -119,6 +124,16 @@ implicit val timeout = akka.util.Timeout(500000)
 				}
 				
 			}
+			
+		case SearchToken(token) => {
+		
+			val future = cacheRouter ? GetTweetsAgainstToken(token)
+			val searchTimeline = Await.result(future, timeout.duration).asInstanceOf[SearchTimeline]
+				sender ! searchTimeline
+				
+			
+		
+		}	
 			
 		case Follow(sourceUserId,targetUserId) =>
 			{
@@ -219,6 +234,13 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			case UpdateMentionTimeline(userId) => {
 
 			}
+			
+			case UpdateSearchTimeline(userId,searchToken) => {
+		
+				val future = cacheRouter ? GetTweetsAgainstToken(searchToken)
+				val searchTimeline = Await.result(future, timeout.duration).asInstanceOf[SearchTimeline]
+				sender ! searchTimeline
+			}	
 	
 			case PrintStatistics => 
 			{
@@ -240,7 +262,19 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	
 	}
 	
-	class Cache (listener: ActorRef) extends Actor {
+	// a parser class to parse the tweets and do any string prossing operation inthe incoming tweets
+	class TweetParser(listener:ActorRef,cacheRouter: ActorRef) extends Actor{
+		def receive = {
+			case TokenizeTweet(tweet) => {
+				///[ToDO] tokenize the tweet and save the tweetid/tweet against each token in cache
+				var token = ""
+				cacheRouter ! PutTweetAgainstToken(token,tweet)
+			
+			}
+		}
+	}
+	
+	class Cache (listener: ActorRef) extends Actor{
 
         //println("Cache actor "+self+" Created")
         
@@ -282,11 +316,18 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			//iTweetsCount = 0
 		}
 		
-
+		case PutTweetAgainstToken(token,tweet) => {
+			// ToDo save the tweet against the token page wise (token -> (pageNo -> TweetList))
+		}
+		
+		case GetTweetsAgainstToken(token) => {
+			// ToDo save the tweet against the token page wise (token -> (pageNo -> TweetList))
+		}
 
 		case Entry(key, value) => { cache += (key -> value)
         		//println("Key recieved at "+self)
 		}
+		
 		
 		case PutTweet(tweetId,tweet) => {
 			//println("Cache :"+tweet)
