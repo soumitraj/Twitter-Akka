@@ -70,6 +70,8 @@ case PutTweet(tweetid,tweet) => tweetid
 case GetHomeTimeline(userid) => userid
 case GetUserTimeline(userid) => userid
 case GetFollowerList(userid) => userid
+case PutTweetAgainstToken(token,tweet) => token
+case GetTweetsAgainstToken(token) => token
 }
 
 
@@ -79,20 +81,20 @@ val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashi
 val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(RoundRobinRouter(10*nrOfWorkers)),name="parser")
 //val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
 
-val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
+val masterActor = system.actorOf(Props(new Master(10, listener,cache, parser)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
 
 	  masterActor ! Start 
 	  masterActor ! Message("The Master is alive and started")
 	  masterActor ! Register("abc","uid1","pswd")
        masterActor ! Login("uid1","pswd")
-       masterActor !  TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
+       masterActor !  TweetFromUser("Today Sunday","uid1",System.currentTimeMillis) 
 	
 	masterActor ! PrintStatistics
 
 	masterActor ! Register("user2","uid2","pswd")
 	masterActor ! Login("uid2","pswd")
 	masterActor ! Follow("uid2","uid1")
-       masterActor !  TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
+       masterActor !  TweetFromUser("Hello Twitter","uid1",System.currentTimeMillis) 
 
 	masterActor ! PrintStatistics
 
@@ -103,7 +105,7 @@ val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRoute
 
 
 
-class Worker(cacheRouter: ActorRef) extends Actor {
+class Worker(cacheRouter: ActorRef, parser: ActorRef) extends Actor {
 
 implicit val timeout = akka.util.Timeout(500000)
 
@@ -123,6 +125,7 @@ implicit val timeout = akka.util.Timeout(500000)
 				cacheRouter ! PutTweetHomeTimline(followerId,objTweet)
 				}
 				
+				parser ! TokenizeTweet(objTweet)
 			}
 			
 		case SearchToken(token) => {
@@ -157,7 +160,7 @@ implicit val timeout = akka.util.Timeout(500000)
 
 }
 
-class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
+class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser: ActorRef)
 	extends Actor {
 	implicit val timeout = akka.util.Timeout(500000)
 		var nrOfResults: Int = _
@@ -167,7 +170,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		var tweetlist = new java.util.ArrayList[String]()
  		var totalTweet:Int = 0;
 		val workerRouter = context.actorOf(
-		Props(new Worker(cacheRouter)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
+		Props(new Worker(cacheRouter, parser)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  		var lastUserId:String = ""
 		def receive = {
 		
@@ -267,9 +270,14 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		def receive = {
 			case TokenizeTweet(tweet) => {
 				///[ToDO] tokenize the tweet and save the tweetid/tweet against each token in cache
+				var tweetarray = tweet.tweet.split(" ") 
 				var token = ""
-				cacheRouter ! PutTweetAgainstToken(token,tweet)
-			
+				
+				for(i <- 0 to tweetarray.length-1)
+  				{
+   					token = tweetarray(i)	
+					cacheRouter ! PutTweetAgainstToken(token,tweet)
+				}
 			}
 		}
 	}
@@ -291,7 +299,10 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 	var outUserTweetCount =0
 	var outHomeTweetCount =0
 	
-	
+	var outermap = new scala.collection.mutable.HashMap[String, scala.collection.mutable.HashMap[Int, java.util.ArrayList[String]]]
+	var tokenmap = new scala.collection.mutable.HashMap[String, Int]
+	var x: Int = 1
+
 	//Added by Stuti
 	var getTweetStat:akka.actor.Cancellable = _
 
@@ -318,10 +329,47 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		
 		case PutTweetAgainstToken(token,tweet) => {
 			// ToDo save the tweet against the token page wise (token -> (pageNo -> TweetList))
+			//println(token + "->" + tweet.tweet)
+			var tweeterlist = new java.util.ArrayList[String]()
+ 			var tweetermap = new scala.collection.mutable.HashMap[Int, java.util.ArrayList[String]] 
+			//println(outermap)
+ 			if(tokenmap.contains(token)) {
+ 
+ 			}
+ 			else {
+ 				tokenmap += (token -> 1)
+ 				x = tokenmap(token)
+ 			}
+
+ 			if(outermap.contains(token)){
+       			if((outermap(token)(x).size/100) > 0)
+           			x += 1
+    			
+    			if(outermap(token).contains(x)) {
+    				outermap(token)(x).add(tweet.tweet)
+
+  		 		}
+   				else {
+     		 		outermap(token) += (x -> tweeterlist)
+     				outermap(token)(x).add(tweet.tweet)
+     			}
+       		}  
+       		else {
+
+    			tweeterlist.add(tweet.tweet)
+      			tweetermap += (1 -> tweeterlist)
+    			outermap += (token -> tweetermap)
+
+    		}
+    		tokenmap(token) = x
+    	//	println("here" + outermap)
 		}
 		
 		case GetTweetsAgainstToken(token) => {
 			// ToDo save the tweet against the token page wise (token -> (pageNo -> TweetList))
+			if(outermap.contains(token)){
+				sender ! outermap(token)(tokenmap(token))
+			}	
 		}
 
 		case Entry(key, value) => { cache += (key -> value)
@@ -330,14 +378,11 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		
 		
 		case PutTweet(tweetId,tweet) => {
+			println(tweetsMap)
 			//println("Cache :"+tweet)
 			//println("Total tweets in cache :" + tweetsMap.size)
 			tweetsMap += (tweetId -> tweet)
-			for ((key, value) <- tweetsMap) {	
-				if(value.tweet contains "ipsum" ) {
-					println (key +"-->"+ value.tweet) 
-				}
-			}	
+			
 		}
 		
 		case GetHomeTimeline(userid) => {
