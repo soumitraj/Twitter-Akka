@@ -105,8 +105,8 @@ lazy val sendMessage = get{
     parameters("sourceId"?, "targetId"?, "message"){
     (sourceId, targetId, message)=>
       complete{
-           //remote ! SentMessages(sourceId.get, targetId.get, message)
-           (remote ! SentMessages("uid1","uid2", "message"))
+           (remote ! SentMessages(sourceId.get, targetId.get, message))
+           //(remote ! SentMessages("uid1","uid2", "message"))
            "Message sent between " +sourceId+ " and "+targetId
       }
     }
