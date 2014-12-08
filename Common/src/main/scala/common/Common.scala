@@ -34,3 +34,15 @@ case class UpdateUserTimeline(userId: String)
 case class UpdateHomeTimeline(userId: String)
 case class UpdateMentionTimeline(userId: String)
 case class UpdateSearchTimeline(userId: String,searchToken:String)
+case class SentMessages(sourceId:String, tagretId: String, message:String)
+
+
+object JsonUtil{
+	
+	private implicit val formats = Serialization.formats(NoTypeHints)
+	def toJson(users: List[User]) : String = writePretty(users)
+	def toJson(user:User) : String = writePretty(user)
+	def toJson(tweet:Tweet) : String = writePretty(tweet)
+	
+	
+}
