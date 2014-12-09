@@ -571,7 +571,7 @@ class Listener extends Actor {
 		
 		
 		var printTweetStat:akka.actor.Cancellable = _
-	//	printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
+		printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
 
 		var totalTweetCount:Int = 0
 		var prevTotalTweetCount:Int = 0
