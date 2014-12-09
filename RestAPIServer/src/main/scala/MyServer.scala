@@ -13,6 +13,7 @@ import spray.routing.directives._
 import scala.concurrent.duration._
 import common._
 import scala.util.Random
+import scala.concurrent.Await
 
 
 object MyServer extends App with SimpleRoutingApp{
@@ -86,12 +87,29 @@ object MyServer extends App with SimpleRoutingApp{
   	}
   
   }
-  
+
+  lazy val getsearchTweets = get{
+  path("search"){
+    parameters("searchString"){
+    (searchString)=>
+      complete{
+
+            val future = remote ?  UpdateSearchTimeline("uid1", searchString)
+         //   val searchTimeline = Await.result(future, timeout.duration).asInstanceOf[SearchTimeline]
+          //  remote ! UpdateSearchTimeline("uid1", searchString)
+          "future for " +searchString+ " is" + future
+        //   "Search timeline for " +searchString+ " is" + searchTimeline
+      }
+    }
+  }
+}
+
   startServer(interface = "localhost", port = 8080){
   		sendTweetRoute ~
   		helloRoute ~
   		helloRoute2 ~
   		burnRoute ~
+      getsearchTweets~
   		getJson {
   			path("list" / "all"){
 	  				complete {
@@ -155,7 +173,10 @@ class TestActor extends Actor {
 
 }
 
+
 case object GetTestAttribute
+
+
 
 
 

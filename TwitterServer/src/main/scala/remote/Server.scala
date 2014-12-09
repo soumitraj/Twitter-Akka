@@ -77,7 +77,7 @@ case GetTweetsAgainstToken(token) => token
 
 
 //val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
-val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(1*nrOfWorkers, hashMapping = hashMapping)),name = "cache")
+val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(5*nrOfWorkers, hashMapping = hashMapping)),name = "cache")
 
 val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(RoundRobinRouter(10*nrOfWorkers)),name="parser")
 //val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
@@ -101,7 +101,7 @@ val masterActor = system.actorOf(Props(new Master(10, listener,cache, parser)).w
 
 	masterActor ! PrintStatistics
 
-	masterActor ! UpdateSearchTimeline("uid1", "Sunday")
+	masterActor ! UpdateSearchTimeline("uid1", "Hello")
 }
 
 }

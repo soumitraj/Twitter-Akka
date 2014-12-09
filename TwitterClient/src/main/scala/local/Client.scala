@@ -235,6 +235,7 @@ def receive = {
 	case "updateUserTimeline" =>
 	{
 		remote ! UpdateUserTimeline(userId)
+		remote ! UpdateSearchTimeline("uid1", "Lorem")
 	}
 
 	case "updateHomeTimeline" =>
