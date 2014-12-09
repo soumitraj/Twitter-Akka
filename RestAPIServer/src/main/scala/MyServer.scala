@@ -1,5 +1,6 @@
 
 import akka.actor._
+import scala.concurrent._
 import akka.pattern.ask
 import spray.routing.SimpleRoutingApp
 
@@ -63,6 +64,7 @@ object MyServer extends App with SimpleRoutingApp{
   	}
   	
   	
+  	
   	lazy val burnRoute = get{
   		path("burn"/ "remaining"){
   			complete{
@@ -87,6 +89,25 @@ object MyServer extends App with SimpleRoutingApp{
   	}
   
   }
+  
+  lazy val showTweetRoute = get {
+  			path("statuses"/"show"){
+  				parameters("id"){id =>
+  					complete{
+ 						//	(remote ? GetTweetById(id)).mapTo[Tweet].map(tweet => "Tweet is :"+tweet)
+ 						
+ 						//(   Await.result(remote ? GetTweetById(id), timeout.duration).asInstanceOf[String])
+ 							//"Path Ok"
+ 							//(remote ? GetTweetById(id)).mapTo[Tweet].map(tweet => "Tweet is :"+tweet)
+ 							
+ 						val future = remote ? GetTweetById(id)
+						val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]	
+							JsonUtil.toJson(userTweet)
+ 						}
+  				}
+  				
+  			}
+  		}
   
 lazy val getFriendship = get{
   path("friendship"/"add"){
@@ -140,6 +161,7 @@ lazy val sendTweetRoute2 = get{
 
   startServer(interface = "localhost", port = 8080){
   		sendTweetRoute ~
+  		showTweetRoute ~
       sendTweetRoute2 ~
   		helloRoute ~
   		helloRoute2 ~
@@ -211,6 +233,14 @@ class TestActor extends Actor {
 }
 
 case object GetTestAttribute
+
+object JsonUtil{
+	
+	private implicit val formats = Serialization.formats(NoTypeHints)
+	def toJson(tweet:Tweet) : String = writePretty(tweet)
+	
+	
+}
 
 
 

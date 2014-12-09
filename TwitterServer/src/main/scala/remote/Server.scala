@@ -17,6 +17,7 @@ import akka.routing.RoundRobinRouter
 
 //   import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
+import common._
 
 
 //Added by Stuti
@@ -82,6 +83,7 @@ case GetFollowerList(userid) => userid
 case PutSentMessages(sourceId, targetId,message) => sourceId
 case PutReceivedMessages(targetId, sourceId, message) => targetId
 case RemoveFollowerToUser(targetId, followerid) => targetId
+case GetTweetById(tweetId) => tweetId
 }
 
 
@@ -103,10 +105,12 @@ val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRoute
 	masterActor ! Login("uid2","pswd")
 	masterActor ! Follow("uid2","uid1")
     masterActor ! TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
+    
     //masterActor ! SentMessages("uid1","uid2", "message")
     //masterActor ! SentMessages("uid1","uid2", "message")
     //masterActor ! SentMessages("uid1","uid2", "message")
 	masterActor ! PrintStatistics
+	masterActor ! GetTweetById("ID")
 	//masterActor ! UnFollow("uid2","uid1")
 }
 
@@ -180,6 +184,14 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		Props(new Worker(cacheRouter)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
  		var lastUserId:String = ""
 		def receive = {
+		
+			case GetTweetById(tweetId) => {
+				println(" GetTweetById(tweetId) Master")
+				val future = cacheRouter ? GetTweetById(tweetId)
+				val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]
+				sender ! userTweet
+			
+			}
 		
 			case FetchUserToFollow(sourceId,randNum) => 
 				{
@@ -363,7 +375,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		
 		
 		case PutTweet(tweetId,tweet) => {
-			//println("Cache :"+tweet)
+			println("Cache :"+tweet)
 			//println("Total tweets in cache :" + tweetsMap.size)
 			tweetsMap += (tweetId -> tweet)
 			for ((key, value) <- tweetsMap) {	
@@ -371,6 +383,17 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 					println (key +"-->"+ value.tweet) 
 				}
 			}	
+		}
+		
+		case GetTweetById(tweetId) => {
+						println(" GetTweetById(tweetId) cache")
+			val tweet = tweetsMap.get(tweetId) match{
+				case Some(tweet) => tweet
+				case None => Tweet("Error","Error",System.currentTimeMillis,"Error No Tweet Found By this ID "+tweetId)
+			}
+			
+			sender ! tweet
+		    println("  tweet sent :"+tweet)
 		}
 		
 		case GetHomeTimeline(userid) => {

@@ -1,6 +1,5 @@
 package common
 
-
 case object Start // local sends to local to start
 case object BindRequest // local worker sends to master
 case object BindOK
@@ -37,11 +36,4 @@ case class UpdateMentionTimeline(userId: String)
 case class UpdateSearchTimeline(userId: String,searchToken:String)
 case class SentMessages(sourceId:String, tagretId: String, message:String)
 
-
-/*object JsonUtil{
-	
-	private implicit val formats = Serialization.formats(NoTypeHints)
-	def toJson(tweet:Tweet) : String = writePretty(tweet)
-	
-	
-}*/
+case class GetTweetById(tweetId:String)
