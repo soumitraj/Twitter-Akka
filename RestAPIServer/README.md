@@ -30,3 +30,6 @@ http://localhost:8080/statuses/user_timeline?id=uid1
 
 Fetch Home Timeline of a given user
 http://localhost:8080/statuses/home_timeline?id=uid1
+
+Search Timeline for a token
+http://localhost:8080/search?searchString=Twitter
