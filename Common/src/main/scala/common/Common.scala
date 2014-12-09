@@ -18,9 +18,11 @@ case class Timeline(userId:String,tweetList:List[Tweet]) extends Serializable
 case class UserTimeline(timeline:Timeline) extends Serializable
 case class HomeTimeline(timeline:Timeline) extends Serializable
 case class SearchTimeline(timeline:Timeline,pageNo:Int) extends Serializable
+case class FollowerList(userId:String,followers:List[String])
 
 case class Follow(sourceId:String, targetId: String)
 case class UnFollow(sourceId:String, targetId: String)
+case class GetFollowerList(userid:String)
 
 case class FetchUserToFollow(sourceId : String,rand: Int)
 

@@ -38,7 +38,7 @@ case class PutTweet(tweetid:String,tweet:Tweet)
 
 case class GetHomeTimeline(userid:String)
 case class GetUserTimeline(userid:String)
-case class GetFollowerList(userid:String)
+//case class GetFollowerList(userid:String)
 case class Entry(key: String, value: String)
 
 case class TokenizeTweet(tweet:Tweet)
@@ -192,7 +192,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		def receive = {
 		
 			case GetTweetById(tweetId) => {
-				println(" GetTweetById(tweetId) Master")
+				//println(" GetTweetById(tweetId) Master")
 				val future = cacheRouter ? GetTweetById(tweetId)
 				val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]
 				sender ! userTweet
@@ -202,6 +202,13 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			case DeleteTweetById(tweetId) => {
 				workerRouter ! DeleteTweetById(tweetId)
 		
+			}
+			
+			case  GetFollowerList(userid) => {
+				//println(" GetFollowerList Master")
+				val future = cacheRouter ? GetFollowerList(userid)
+				val followers = Await.result(future, timeout.duration).asInstanceOf[List[String]]
+				sender ! FollowerList(userid,followers)
 			}
 		
 			case FetchUserToFollow(sourceId,randNum) => 
@@ -273,6 +280,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				val future = cacheRouter ? GetUserTimeline(userId)
 				val userTweetList = Await.result(future, timeout.duration).asInstanceOf[List[Tweet]]
 				println(userTweetList)
+				println(userTweetList.isInstanceOf[Serializable])
 				sender ! UserTimeline(Timeline(userId,userTweetList))
 			
 			}
@@ -353,7 +361,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 
 	/*val system = ActorSystem("BtcMasterSystem")
 	val listener = system.actorOf(Props[Listener], name = "listener")*/
-//	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
+	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
 	
 /*	PrivateMessage(fromUserId:String,toUserId:String, message:Message,time:long)
 	Inbox(userid:String,messageList:List[PrivateMessage])

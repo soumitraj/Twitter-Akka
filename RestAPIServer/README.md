@@ -24,3 +24,9 @@ localhost:8080/statuses/show?id=tweetId
 
 Destroys the status specified by the required ID parameter.
 http://localhost:8080/statuses/distroy?id=141810096000
+
+Fetch User Timeline of a given user
+http://localhost:8080/statuses/user_timeline?id=uid1
+
+Fetch Home Timeline of a given user
+http://localhost:8080/statuses/home_timeline?id=uid1
