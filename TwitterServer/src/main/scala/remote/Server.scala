@@ -45,6 +45,15 @@ case class PutTweetAgainstToken(token:String,tweet:Tweet)
 case class GetTweetsAgainstToken(token:String)
 case class SearchToken(token:String)
 case object PrintStatistics
+case class SentMessages(sourceId: String, tagretId: String, message: String)
+case class PutSentMessages(sourceId:String, tagretId: String, message:String)
+case class PutReceivedMessages(targetId:String, sourceId:String, message:String)
+case class PrivateMessage(fromUserId:String, toUserId:String, message:String)
+
+case class RemoveFollowerToUser(targetId:String, followerid:String)
+//Inbox(userid:String,messageList:List[PrivateMessage])
+//Outbox(userid:String,messageList:List[PrivateMessage])
+
 
 
 object TwitterServer {
@@ -70,6 +79,9 @@ case PutTweet(tweetid,tweet) => tweetid
 case GetHomeTimeline(userid) => userid
 case GetUserTimeline(userid) => userid
 case GetFollowerList(userid) => userid
+case PutSentMessages(sourceId, targetId,message) => sourceId
+case PutReceivedMessages(targetId, sourceId, message) => targetId
+case RemoveFollowerToUser(targetId, followerid) => targetId
 }
 
 
@@ -81,28 +93,24 @@ val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(Ro
 
 val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
 
-	  masterActor ! Start 
-	  masterActor ! Message("The Master is alive and started")
-	  masterActor ! Register("abc","uid1","pswd")
-       masterActor ! Login("uid1","pswd")
-       masterActor !  TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
-	
+	masterActor ! Start 
+	masterActor ! Message("The Master is alive and started")
+	masterActor ! Register("abc","uid1","pswd")
+    masterActor ! Login("uid1","pswd")
+    masterActor ! TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
 	masterActor ! PrintStatistics
-
 	masterActor ! Register("user2","uid2","pswd")
 	masterActor ! Login("uid2","pswd")
 	masterActor ! Follow("uid2","uid1")
-       masterActor !  TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
-
+    masterActor ! TweetFromUser("HelloTwitter","uid1",System.currentTimeMillis) 
+    //masterActor ! SentMessages("uid1","uid2", "message")
+    //masterActor ! SentMessages("uid1","uid2", "message")
+    //masterActor ! SentMessages("uid1","uid2", "message")
 	masterActor ! PrintStatistics
-
-
+	//masterActor ! UnFollow("uid2","uid1")
 }
 
 }
-
-
-
 class Worker(cacheRouter: ActorRef) extends Actor {
 
 implicit val timeout = akka.util.Timeout(500000)
@@ -114,10 +122,8 @@ implicit val timeout = akka.util.Timeout(500000)
 				val objTweet = Tweet(tweetId,senderId,time,tweet)
 				cacheRouter ! PutTweet(tweetId,objTweet)
 				cacheRouter ! PutTweetUserTimline(senderId,objTweet)
-				
 				val future = cacheRouter ? GetFollowerList(senderId)
-				val followerList = Await.result(future, timeout.duration).asInstanceOf[List[String]]
-				
+				val followerList = Await.result(future, timeout.duration).asInstanceOf[List[String]]				
 				followerList.map { followerId =>
 				
 				cacheRouter ! PutTweetHomeTimline(followerId,objTweet)
@@ -130,9 +136,6 @@ implicit val timeout = akka.util.Timeout(500000)
 			val future = cacheRouter ? GetTweetsAgainstToken(token)
 			val searchTimeline = Await.result(future, timeout.duration).asInstanceOf[SearchTimeline]
 				sender ! searchTimeline
-				
-			
-		
 		}	
 			
 		case Follow(sourceUserId,targetUserId) =>
@@ -140,21 +143,28 @@ implicit val timeout = akka.util.Timeout(500000)
 				cacheRouter ! PutFollowerToUser(targetUserId,sourceUserId)
 			
 			}
-		
+
+		case common.UnFollow(sourceUserId,targetUserId) =>
+			{
+				//println("Before calling cache router")
+				cacheRouter ! RemoveFollowerToUser(targetUserId,sourceUserId)			
+			}
+
+		case common.SentMessages(sourceId,targetId, message) =>
+			{
+				//println("message recieved in workerRouter")
+				cacheRouter ! PutSentMessages(sourceId,targetId, message)
+				cacheRouter ! PutReceivedMessages(targetId, sourceId, message)				
+			}
 		case FetchUserToFollow(sourceId,randNum) => {
 			//cacheRouter ! FetchUserToFollow(sourceId+randNum,randNum)
-			
-			
 		}
 			
 		case PrintStatistics =>
 			{
 //				printTimelines()
 			}
-	
-	
 	}
-
 }
 
 class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
@@ -206,9 +216,9 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				{	lastUserId = senderId
 					totalTweet += 1
 					//print(totalTweet +"\t")
-			//		println("Recieved "+tweet +"at :"+System.currentTimeMillis)
+					println("Recieved "+tweet +"at :"+System.currentTimeMillis)
 					workerRouter ! ProcessTweet(tweet,senderId,time)
-					sender ! TweetProcessedOK
+					//sender ! TweetProcessedOK
 
 				}	
 				
@@ -216,6 +226,22 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			case Follow(sourceUserId,targetUserId) =>
 				{	if(!sourceUserId.equalsIgnoreCase(targetUserId))
 						workerRouter ! Follow(sourceUserId,targetUserId)
+
+				}		
+
+			case common.UnFollow(sourceUserId,targetUserId) =>
+				{	
+					if(!sourceUserId.equalsIgnoreCase(targetUserId)){
+						//println("Before calling workerRouter")
+						workerRouter ! common.UnFollow(sourceUserId,targetUserId)
+					}
+				}		
+
+			case common.SentMessages(sourceUserId, targetUserId, message) =>
+				{
+					//println("Message received in master")
+					if(!sourceUserId.equalsIgnoreCase(targetUserId))
+						workerRouter ! common.SentMessages(sourceUserId,targetUserId, message)
 
 				}		
 
@@ -278,10 +304,15 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 
         //println("Cache actor "+self+" Created")
         
-     var tweetsMap = new scala.collection.mutable.HashMap[String, Tweet]()
+    var tweetsMap = new scala.collection.mutable.HashMap[String, Tweet]()
 	var homeTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]() // userId, tweetlist
 	var userTimelineMap = new scala.collection.mutable.HashMap[String,List[Tweet]]()
 	var userFollowerMap = new scala.collection.mutable.HashMap[String,List[String]]()
+	//var userSentMessageMap = new scala.collection.mutable.HashMap[String,List[String]]()
+	//var userSentMessageMap = new scala.collection.mutable.HashMap[String,String]()
+	var userSentMessageMap = new scala.collection.mutable.HashMap[String,List[PrivateMessage]]()
+	var userReceivedMessageMap = new scala.collection.mutable.HashMap[String,List[PrivateMessage]]()
+
 	val tweetcount=0;
 	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
 	var userArrayList = new java.util.ArrayList[String]()
@@ -297,10 +328,12 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 
 	/*val system = ActorSystem("BtcMasterSystem")
 	val listener = system.actorOf(Props[Listener], name = "listener")*/
-	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
+//	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
 	
-
-
+/*	PrivateMessage(fromUserId:String,toUserId:String, message:Message,time:long)
+	Inbox(userid:String,messageList:List[PrivateMessage])
+	Outbox(userid:String,messageList:List[PrivateMessage])
+*/
 	def receive = {
 		//implicit val system = ActorSystem("LocalSystem")
 		
@@ -376,7 +409,6 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			
 			}
 			sender ! userFollowerList
-		
 		}
 		
 		case PutTweetHomeTimline(userid,tweet) => {
@@ -400,9 +432,8 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 			
 			val newUserTimeline = tweet +: userTimeline
 			userTimelineMap += (userid -> newUserTimeline)
-		
-		
 		}
+	
 		case PutFollowerToUser(targetId,followerid) => {
 		
 			val followerList : List[String] = userFollowerMap.get(targetId) match {
@@ -414,9 +445,57 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				val newfollowerList = followerid +: followerList
 				userFollowerMap += (targetId -> newfollowerList)
 			}
-		
+			println(userFollowerMap + " "+ self.path.name)
+		}
+
+
+		case RemoveFollowerToUser(targetId,followerid) => {
+			//println("Inside cache router")		
+			val followerList : List[String] = userFollowerMap.get(targetId) match {
+							case Some(list) => list
+							case None => List[String]()
+						}
+			if(followerList.contains(followerid)){
+				//println("followerAdded")
+				//val newfollowerList =  followerList - followerid
+				//userFollowerMap += (targetId -> newfollowerList)
+				userFollowerMap -= followerid
+			}
+			println(userFollowerMap + " "+ self.path.name)
 		}
 		
+		case PutSentMessages(sourceId,targetId, message) => {
+			var privateMessageObj = PrivateMessage(sourceId, targetId, message)
+			val receiverList : List[PrivateMessage] = userSentMessageMap.get(sourceId) match {
+				case Some(list) => list
+				case None => List[PrivateMessage]()
+			}
+				val newReceiverList = privateMessageObj +: receiverList
+				userSentMessageMap += (sourceId -> newReceiverList)
+				/*println("message recieved in cache")
+			userSentMessageMap += (sourceId -> targetId)		
+			println("Message added to the sent mesaage List" + userSentMessageMap)
+			*/
+			println(userSentMessageMap+ "  " + self.path.name)
+
+		}
+
+		case PutReceivedMessages(targetId, sourceId, message) => {
+			var privateMessageObj = PrivateMessage(targetId, sourceId, message)
+			val senderList : List[PrivateMessage] = userReceivedMessageMap.get(targetId) match {
+				case Some(list) => list
+				case None => List[PrivateMessage]()
+			}
+				val newSenderList = privateMessageObj +: senderList
+				userReceivedMessageMap += (targetId -> newSenderList)
+				/*println("message recieved in cache")
+			userSentMessageMap += (sourceId -> targetId)		
+			println("Message added to the sent mesaage List" + userSentMessageMap)
+			*/
+			println(userReceivedMessageMap + "  " + self.path.name)
+
+		}
+
 		case FetchUserToFollow(randKeyString,radnId) => {
 			sender ! userTimelineMap.keySet.head
 		
@@ -439,14 +518,11 @@ class Listener extends Actor {
 		
 		
 		var printTweetStat:akka.actor.Cancellable = _
-		printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
+	//	printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
 
 		var totalTweetCount:Int = 0
 		var prevTotalTweetCount:Int = 0
 		var prevDelta=0
-
-			
-
 		var totalUserCount:Int = 0
 		var prevTotalUserCount:Int = 0
 		var prevDeltaUser=0
@@ -506,7 +582,6 @@ class Listener extends Actor {
 			*/
 		}
 
-
 		case PrintUserStat(actorName, count) => {
 			//println("TweetCount is " + count + " " + actorName)
 			totalUserCount += count
@@ -524,7 +599,5 @@ class Listener extends Actor {
 		case PrintFollowerCount(actorName,count) => {
 			followerCountMap += (actorName -> count)
 		}
-
-		
 	}
 }

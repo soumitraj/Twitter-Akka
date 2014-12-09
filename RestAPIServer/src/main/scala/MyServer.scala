@@ -43,7 +43,7 @@ object MyServer extends App with SimpleRoutingApp{
   
   val remote = actorSystem.actorFor(remoteActorString) 
   lazy val helloActor = actorSystem.actorOf(Props(new HelloActor()))
-   lazy val TestActor = actorSystem.actorOf(Props(new TestActor()))
+  lazy val TestActor = actorSystem.actorOf(Props(new TestActor()))
   
   println(remote)
   lazy val helloRoute2 = get{
@@ -81,17 +81,72 @@ object MyServer extends App with SimpleRoutingApp{
   		// println(TweetFromUser("HelloTwitter","uid1"+Random.nextInt(500),System.currentTimeMillis))
   		 complete{
   		 		(remote !  TweetFromUser("HelloTwitter","uid1"+Random.nextInt(500),System.currentTimeMillis) )
+        //(remote ! SentMessages("uid1","uid2", "message"))
   					"OK"
   				}
   	}
   
   }
   
+lazy val getFriendship = get{
+  path("friendship"/"add"){
+    parameters("sourceId"?, "targetId"){
+    (sourceId, targetId)=>
+      complete{
+           remote ! Follow(sourceId.get, targetId)
+           "Friendship added between" +sourceId+ "and "+targetId
+      }
+    }
+  }
+}
+
+lazy val destroyFriendship = get{
+  path("friendship"/"destroy"){
+    parameters("sourceId"?, "targetId"){
+    (sourceId, targetId)=>
+      complete{
+           (remote ! UnFollow(sourceId.get, targetId))
+           "Friendship destroyed between" +sourceId+ "and "+targetId
+      }
+    }
+  }
+}
+
+lazy val sendMessage = get{
+  path("sendMessage"/"add"){
+    parameters("sourceId"?, "targetId"?, "message"){
+    (sourceId, targetId, message)=>
+      complete{
+           (remote ! SentMessages(sourceId.get, targetId.get, message))
+           //(remote ! SentMessages("uid1","uid2", "message"))
+           "Message sent between " +sourceId+ " and "+targetId
+      }
+    }
+  }
+}
+
+lazy val sendTweetRoute2 = get{
+    path("sendMesg2"){
+//       (remote !  TweetFromUser("HelloTwitter","uid1"+Random.nextInt(500),System.currentTimeMillis) )
+      // println(TweetFromUser("HelloTwitter","uid1"+Random.nextInt(500),System.currentTimeMillis))
+       complete{
+        //  (remote !  TweetFromUser("HelloTwitter","uid1"+Random.nextInt(500),System.currentTimeMillis) )
+        (remote ! SentMessages("uid1","uid2", "message"))
+            "OK"
+          }
+    }
+  
+  }
+
   startServer(interface = "localhost", port = 8080){
   		sendTweetRoute ~
+      sendTweetRoute2 ~
   		helloRoute ~
   		helloRoute2 ~
   		burnRoute ~
+      getFriendship~
+      destroyFriendship~
+      sendMessage~
   		getJson {
   			path("list" / "all"){
 	  				complete {
