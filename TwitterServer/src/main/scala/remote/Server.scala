@@ -84,6 +84,7 @@ case PutSentMessages(sourceId, targetId,message) => sourceId
 case PutReceivedMessages(targetId, sourceId, message) => targetId
 case RemoveFollowerToUser(targetId, followerid) => targetId
 case GetTweetById(tweetId) => tweetId
+case DeleteTweetById(tweetId) => tweetId
 }
 
 
@@ -163,6 +164,11 @@ implicit val timeout = akka.util.Timeout(500000)
 		case FetchUserToFollow(sourceId,randNum) => {
 			//cacheRouter ! FetchUserToFollow(sourceId+randNum,randNum)
 		}
+		
+		case DeleteTweetById(tweetId) => {
+			cacheRouter ! DeleteTweetById(tweetId)
+		
+		}
 			
 		case PrintStatistics =>
 			{
@@ -191,6 +197,11 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]
 				sender ! userTweet
 			
+			}
+			
+			case DeleteTweetById(tweetId) => {
+				workerRouter ! DeleteTweetById(tweetId)
+		
 			}
 		
 			case FetchUserToFollow(sourceId,randNum) => 
@@ -258,8 +269,10 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				}		
 
 			case UpdateUserTimeline(userId) => {
+			println("Request Recieved from :"+sender)
 				val future = cacheRouter ? GetUserTimeline(userId)
 				val userTweetList = Await.result(future, timeout.duration).asInstanceOf[List[Tweet]]
+				println(userTweetList)
 				sender ! UserTimeline(Timeline(userId,userTweetList))
 			
 			}
@@ -396,6 +409,15 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 		    println("  tweet sent :"+tweet)
 		}
 		
+		case DeleteTweetById(tweetId) => {
+			//println("Inside cache router")		
+			
+				tweetsMap -= tweetId
+			
+			println(tweetsMap + " "+ self.path.name)
+		
+		}
+		
 		case GetHomeTimeline(userid) => {
 		
 			val homeTimeline = homeTimelineMap.get(userid) match {
@@ -468,7 +490,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				val newfollowerList = followerid +: followerList
 				userFollowerMap += (targetId -> newfollowerList)
 			}
-			println(userFollowerMap + " "+ self.path.name)
+		//	println(userFollowerMap + " "+ self.path.name)
 		}
 
 
@@ -484,7 +506,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				//userFollowerMap += (targetId -> newfollowerList)
 				userFollowerMap -= followerid
 			}
-			println(userFollowerMap + " "+ self.path.name)
+		//	println(userFollowerMap + " "+ self.path.name)
 		}
 		
 		case PutSentMessages(sourceId,targetId, message) => {
@@ -497,9 +519,9 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				userSentMessageMap += (sourceId -> newReceiverList)
 				/*println("message recieved in cache")
 			userSentMessageMap += (sourceId -> targetId)		
-			println("Message added to the sent mesaage List" + userSentMessageMap)
+		//	println("Message added to the sent mesaage List" + userSentMessageMap)
 			*/
-			println(userSentMessageMap+ "  " + self.path.name)
+		//	println(userSentMessageMap+ "  " + self.path.name)
 
 		}
 

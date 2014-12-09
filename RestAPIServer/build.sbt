@@ -21,8 +21,7 @@ libraryDependencies ++= {
     "com.typesafe.akka"   %%  "akka-testkit"  % akkaV   % "test",
     "com.typesafe.akka"   %%  "akka-http-experimental"  % "0.7",
     "com.typesafe.akka" %% "akka-remote" % "2.3.6",
-    "org.scalatest"       %%  "scalatest"   % "2.2.2" % "test",
-    "com.typesafe.scala-logging"       %%  "scala-logging-slf4j"   % "2.1.2"
+    "org.scalatest"       %%  "scalatest"   % "2.2.2" % "test"
      )
 }
 

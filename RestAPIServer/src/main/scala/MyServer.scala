@@ -108,6 +108,39 @@ object MyServer extends App with SimpleRoutingApp{
   				
   			}
   		}
+  		
+  lazy val fetchUserTimelineRoute = get {
+  			path("statuses"/"user_timeline"){
+  				parameters("id"){id =>
+  					complete{
+ 						//	(remote ? UpdateUserTimeline(id)).mapTo[Tweet].map(tweet => "Tweet is :"+tweet)
+ 						
+ 						//(   Await.result(remote ? GetTweetById(id), timeout.duration).asInstanceOf[String])
+ 							//"Path Ok"
+ 							//(remote ? GetTweetById(id)).mapTo[Tweet].map(tweet => "Tweet is :"+tweet)
+ 							
+ 						var future = remote ? UpdateUserTimeline(id)
+						var userTweet = Await.result(future, timeout.duration).asInstanceOf[UserTimeline]	
+						//	JsonUtil.toJson(userTweet.timeline)
+						""+userTweet
+ 						}
+  				}
+  				
+  			}
+  		}		
+  		
+  		
+   lazy val distroyTweetRoute = get {
+  			path("statuses"/"distroy"){
+  				parameters("id"){id =>
+  					complete{
+ 							(remote ? DeleteTweetById(id))
+ 						    "Tweet Deleted!"
+ 						}
+  				}
+  				
+  			}
+  		}		
   
 lazy val getFriendship = get{
   path("friendship"/"add"){
@@ -161,6 +194,8 @@ lazy val sendTweetRoute2 = get{
 
   startServer(interface = "localhost", port = 8080){
   		sendTweetRoute ~
+  		distroyTweetRoute ~
+  		fetchUserTimelineRoute ~
   		showTweetRoute ~
       sendTweetRoute2 ~
   		helloRoute ~
@@ -236,8 +271,10 @@ case object GetTestAttribute
 
 object JsonUtil{
 	
-	private implicit val formats = Serialization.formats(NoTypeHints)
+	//private implicit val formats = Serialization.formats(NoTypeHints)
+	implicit val formats = native.Serialization.formats(ShortTypeHints(List(classOf[Tweet])))
 	def toJson(tweet:Tweet) : String = writePretty(tweet)
+	def toJson(timeline:Timeline) : String = writePretty(timeline)
 	
 	
 }

@@ -9,15 +9,15 @@ case object TweetProcessedOK
 case object FollowingAcceptedOK
 
 
-case class Tweet(tweetId : String,userId:String,time:Long,tweet:String)
+case class Tweet(tweetId : String,userId:String,time:Long,tweet:String) extends Serializable
 case class TweetFromUser(tweet : String,senderId:String,tweetTimeInMillisec:Long)
 case class Register(userFullName:String,userId:String,password:String)
 case class Login(userId:String,password:String)
                            
-case class Timeline(userId:String,tweetList:List[Tweet])
-case class UserTimeline(timeline:Timeline)
-case class HomeTimeline(timeline:Timeline)
-case class SearchTimeline(timeline:Timeline,pageNo:Int)
+case class Timeline(userId:String,tweetList:List[Tweet]) extends Serializable
+case class UserTimeline(timeline:Timeline) extends Serializable
+case class HomeTimeline(timeline:Timeline) extends Serializable
+case class SearchTimeline(timeline:Timeline,pageNo:Int) extends Serializable
 
 case class Follow(sourceId:String, targetId: String)
 case class UnFollow(sourceId:String, targetId: String)
@@ -37,3 +37,4 @@ case class UpdateSearchTimeline(userId: String,searchToken:String)
 case class SentMessages(sourceId:String, tagretId: String, message:String)
 
 case class GetTweetById(tweetId:String)
+case class DeleteTweetById(id:String)
