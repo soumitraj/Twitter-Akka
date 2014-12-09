@@ -100,6 +100,18 @@ lazy val getFriendship = get{
   }
 }
 
+lazy val destroyFriendship = get{
+  path("friendship"/"destroy"){
+    parameters("sourceId"?, "targetId"){
+    (sourceId, targetId)=>
+      complete{
+           (remote ! UnFollow(sourceId.get, targetId))
+           "Friendship destroyed between" +sourceId+ "and "+targetId
+      }
+    }
+  }
+}
+
 lazy val sendMessage = get{
   path("sendMessage"/"add"){
     parameters("sourceId"?, "targetId"?, "message"){
@@ -133,6 +145,7 @@ lazy val sendTweetRoute2 = get{
   		helloRoute2 ~
   		burnRoute ~
       getFriendship~
+      destroyFriendship~
       sendMessage~
   		getJson {
   			path("list" / "all"){

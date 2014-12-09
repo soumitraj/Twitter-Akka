@@ -49,8 +49,12 @@ case class SentMessages(sourceId: String, tagretId: String, message: String)
 case class PutSentMessages(sourceId:String, tagretId: String, message:String)
 case class PutReceivedMessages(targetId:String, sourceId:String, message:String)
 case class PrivateMessage(fromUserId:String, toUserId:String, message:String)
+
+case class RemoveFollowerToUser(targetId:String, followerid:String)
 //Inbox(userid:String,messageList:List[PrivateMessage])
 //Outbox(userid:String,messageList:List[PrivateMessage])
+
+
 
 object TwitterServer {
 
@@ -77,6 +81,7 @@ case GetUserTimeline(userid) => userid
 case GetFollowerList(userid) => userid
 case PutSentMessages(sourceId, targetId,message) => sourceId
 case PutReceivedMessages(targetId, sourceId, message) => targetId
+case RemoveFollowerToUser(targetId, followerid) => targetId
 }
 
 
@@ -102,6 +107,7 @@ val masterActor = system.actorOf(Props(new Master(10, listener,cache)).withRoute
     //masterActor ! SentMessages("uid1","uid2", "message")
     //masterActor ! SentMessages("uid1","uid2", "message")
 	masterActor ! PrintStatistics
+	//masterActor ! UnFollow("uid2","uid1")
 }
 
 }
@@ -138,9 +144,15 @@ implicit val timeout = akka.util.Timeout(500000)
 			
 			}
 
+		case common.UnFollow(sourceUserId,targetUserId) =>
+			{
+				//println("Before calling cache router")
+				cacheRouter ! RemoveFollowerToUser(targetUserId,sourceUserId)			
+			}
+
 		case common.SentMessages(sourceId,targetId, message) =>
 			{
-				println("message recieved in workerRouter")
+				//println("message recieved in workerRouter")
 				cacheRouter ! PutSentMessages(sourceId,targetId, message)
 				cacheRouter ! PutReceivedMessages(targetId, sourceId, message)				
 			}
@@ -217,9 +229,17 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 
 				}		
 
+			case common.UnFollow(sourceUserId,targetUserId) =>
+				{	
+					if(!sourceUserId.equalsIgnoreCase(targetUserId)){
+						//println("Before calling workerRouter")
+						workerRouter ! common.UnFollow(sourceUserId,targetUserId)
+					}
+				}		
+
 			case common.SentMessages(sourceUserId, targetUserId, message) =>
 				{
-					println("Message received in master")
+					//println("Message received in master")
 					if(!sourceUserId.equalsIgnoreCase(targetUserId))
 						workerRouter ! common.SentMessages(sourceUserId,targetUserId, message)
 
@@ -425,7 +445,23 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef)
 				val newfollowerList = followerid +: followerList
 				userFollowerMap += (targetId -> newfollowerList)
 			}
-		
+			println(userFollowerMap + " "+ self.path.name)
+		}
+
+
+		case RemoveFollowerToUser(targetId,followerid) => {
+			//println("Inside cache router")		
+			val followerList : List[String] = userFollowerMap.get(targetId) match {
+							case Some(list) => list
+							case None => List[String]()
+						}
+			if(followerList.contains(followerid)){
+				//println("followerAdded")
+				//val newfollowerList =  followerList - followerid
+				//userFollowerMap += (targetId -> newfollowerList)
+				userFollowerMap -= followerid
+			}
+			println(userFollowerMap + " "+ self.path.name)
 		}
 		
 		case PutSentMessages(sourceId,targetId, message) => {

@@ -21,6 +21,7 @@ case class HomeTimeline(timeline:Timeline)
 case class SearchTimeline(timeline:Timeline,pageNo:Int)
 
 case class Follow(sourceId:String, targetId: String)
+case class UnFollow(sourceId:String, targetId: String)
 
 case class FetchUserToFollow(sourceId : String,rand: Int)
 
@@ -37,12 +38,10 @@ case class UpdateSearchTimeline(userId: String,searchToken:String)
 case class SentMessages(sourceId:String, tagretId: String, message:String)
 
 
-object JsonUtil{
+/*object JsonUtil{
 	
 	private implicit val formats = Serialization.formats(NoTypeHints)
-	def toJson(users: List[User]) : String = writePretty(users)
-	def toJson(user:User) : String = writePretty(user)
 	def toJson(tweet:Tweet) : String = writePretty(tweet)
 	
 	
-}
+}*/
