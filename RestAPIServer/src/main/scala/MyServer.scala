@@ -1,4 +1,3 @@
-
 import akka.actor._
 import scala.concurrent._
 import akka.pattern.ask
@@ -33,12 +32,12 @@ object MyServer extends App with SimpleRoutingApp{
   
   
   def getJson(route: Route): Route ={
-  	get{
-		respondWithMediaType(MediaTypes.`application/json`)
-		{
-  				route
-  		}
-  	}
+    get{
+    respondWithMediaType(MediaTypes.`application/json`)
+    {
+          route
+      }
+    }
   }
   
   val remote = actorSystem.actorFor(remoteActorString) 
@@ -46,101 +45,101 @@ object MyServer extends App with SimpleRoutingApp{
   println(remote)
   
   lazy val helloRoute = get{
-  	path("hello"){
-  	complete{
-  			"Hello from Server"	
-  	    	}
- //	ctx => ctx.complete("HellO from Server")
-  	 }
-  	}
-  	
-  	
-  	
-  	lazy val sendTestMesgRoute = get{
-  	respondWithMediaType(MediaTypes.`application/json`)
-  	path("sendMesg"){
-  	val newTweet = TweetFromUser("HelloTwitter","uid1"+Random.nextInt(500),System.currentTimeMillis)
-  		 complete{
-  		 		(remote !  newTweet )
-  					JsonUtil.toJson(newTweet)
-  				}
-  	}
+    path("hello"){
+    complete{
+        "Hello from Server" 
+          }
+ // ctx => ctx.complete("HellO from Server")
+     }
+    }
+    
+    
+    
+    lazy val sendTestMesgRoute = get{
+    respondWithMediaType(MediaTypes.`application/json`)
+    path("sendMesg"){
+    val newTweet = TweetFromUser("HelloTwitter","uid1"+Random.nextInt(500),System.currentTimeMillis)
+       complete{
+          (remote !  newTweet )
+            JsonUtil.toJson(newTweet)
+          }
+    }
   
   }
   
-   	lazy val sendTweetRoute = get{
-   	respondWithMediaType(MediaTypes.`application/json`)
-  	path("status"/"add"){
-  		parameters("tweetText"?,"senderId"){(text,senderId) =>
-  		val newTweet =TweetFromUser(text.get,senderId,System.currentTimeMillis)
-  		 complete{
-	 			(remote !  newTweet )
-  					JsonUtil.toJson(newTweet)
-  				}
-  		}
-  	}
+    lazy val sendTweetRoute = get{
+    respondWithMediaType(MediaTypes.`application/json`)
+    path("status"/"add"){
+      parameters("tweetText"?,"senderId"){(text,senderId) =>
+      val newTweet =TweetFromUser(text.get,senderId,System.currentTimeMillis)
+       complete{
+        (remote !  newTweet )
+            JsonUtil.toJson(newTweet)
+          }
+      }
+    }
   
   }
   
   lazy val showTweetRoute = get {
   respondWithMediaType(MediaTypes.`application/json`)
-  			path("statuses"/"show"){
-  				parameters("id"){id =>
-  					complete{
- 						val future = remote ? GetTweetById(id)
-						val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]	
-							JsonUtil.toJson(userTweet)
- 						}
-  				}
-  				
-  			}
-  		}
-  		
+        path("statuses"/"show"){
+          parameters("id"){id =>
+            complete{
+            val future = remote ? GetTweetById(id)
+            val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]  
+              JsonUtil.toJson(userTweet)
+            }
+          }
+          
+        }
+      }
+      
   lazy val fetchUserTimelineRoute = get {
   respondWithMediaType(MediaTypes.`application/json`)
-  			path("statuses"/"user_timeline"){
-  				parameters("id"){id =>
-  					complete{
- 						var future = remote ? UpdateUserTimeline(id)
-						var userTweet = Await.result(future, timeout.duration).asInstanceOf[UserTimeline]	
-							JsonUtil.toJson(userTweet.timeline)
- 						}
-  				}
-  				
-  			}
-  		}
-  		
+        path("statuses"/"user_timeline"){
+          parameters("id"){id =>
+            complete{
+            var future = remote ? UpdateUserTimeline(id)
+            var userTweet = Await.result(future, timeout.duration).asInstanceOf[UserTimeline] 
+              JsonUtil.toJson(userTweet.timeline)
+            }
+          }
+          
+        }
+      }
+      
     lazy val fetchHomeTimelineRoute = get {
     respondWithMediaType(MediaTypes.`application/json`)
-  			path("statuses"/"home_timeline"){
-  				parameters("id"){id =>
-  					complete{
+        path("statuses"/"home_timeline"){
+          parameters("id"){id =>
+            complete{
 
- 						var future = remote ? UpdateHomeTimeline(id)
-						var userTweet = Await.result(future, timeout.duration).asInstanceOf[HomeTimeline]	
-							JsonUtil.toJson(userTweet.timeline)
- 						}
-  				}
-  				
-  			}
-  		}				
-  		
-  		
+            var future = remote ? UpdateHomeTimeline(id)
+            var userTweet = Await.result(future, timeout.duration).asInstanceOf[HomeTimeline] 
+              JsonUtil.toJson(userTweet.timeline)
+            }
+          }
+          
+        }
+      }       
+      
+      
    lazy val distroyTweetRoute = get {
    respondWithMediaType(MediaTypes.`application/json`)
-  			path("statuses"/"distroy"){
-  				parameters("id"){id =>
-  				val future = remote ? GetTweetById(id)
-				val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]	
-							
-  					complete{
- 							(remote ? DeleteTweetById(id))
- 						    JsonUtil.toJson(userTweet)
- 						}
-  				}
-  				
-  			}
-  		}		
+        path("statuses"/"distroy"){
+          parameters("id"){id =>
+          val future = remote ? GetTweetById(id)
+        val userTweet = Await.result(future, timeout.duration).asInstanceOf[Tweet]  
+              
+            complete{
+              (remote ? DeleteTweetById(id))
+                JsonUtil.toJson(userTweet)
+            }
+          }
+          
+        }
+      }   
   
 lazy val getFriendship = get{
   path("friendship"/"add"){
@@ -159,7 +158,7 @@ lazy val getFollowerListRoute = get{
     parameters("userid"){
     (userid)=>
          val future = remote ? GetFollowerList(userid)
-				val followers = Await.result(future, timeout.duration).asInstanceOf[FollowerList]	
+        val followers = Await.result(future, timeout.duration).asInstanceOf[FollowerList] 
       complete{
            JsonUtil.toJson(followers)
       }
@@ -202,47 +201,61 @@ lazy val sendTweetRoute2 = get{
   
   }
 
+lazy val getsearchTweets = get{
+  path("search"){
+    parameters("searchString"){
+    (searchString)=>
+            val future = remote ?  UpdateSearchTimeline("uid1", searchString)
+            val searchTimeline = Await.result(future, timeout.duration).asInstanceOf[SearchTimeline]
+          //  remote ! UpdateSearchTimeline("uid1", searchString)
+      complete{
+           // "future for " +searchString+ " is" + future
+           "Search timeline for " +searchString+ " is" + searchTimeline
+           JsonUtil.toJson(searchTimeline)
+      }
+    }
+  }
+}  
+
   startServer(interface = "localhost", port = 8080){
-  		sendTweetRoute ~
-  		distroyTweetRoute ~
-  		fetchUserTimelineRoute ~
-  		fetchHomeTimelineRoute ~
-  		showTweetRoute ~
+      sendTweetRoute ~
+      distroyTweetRoute ~
+      fetchUserTimelineRoute ~
+      fetchHomeTimelineRoute ~
+      showTweetRoute ~
       sendTweetRoute2 ~
-  		helloRoute ~
+      helloRoute ~
       getFriendship~
       getFollowerListRoute ~
       destroyFriendship~
       sendTestMesgRoute ~
+      getsearchTweets ~
       sendMessage
-//  		post {
-//  			path("user"/"add"){ name =>
-//  				val newUser = User("NewUSer")
-//  				users = newUser :: users
-//  				
-//  				complete{
-//  					"OK"
-//  				}
-//  			}
-//  		}
-   	}
+//      post {
+//        path("user"/"add"){ name =>
+//          val newUser = User("NewUSer")
+//          users = newUser :: users
+//          
+//          complete{
+//            "OK"
+//          }
+//        }
+//      }
+    }
 
 
 }
 
 object JsonUtil{
-	
-	//private implicit val formats = Serialization.formats(NoTypeHints)
-	implicit val formats = native.Serialization.formats(ShortTypeHints(List(classOf[Tweet])))
-	def toJson(tweet:Tweet) : String = writePretty(tweet)
-	def toJson(timeline:Timeline) : String = writePretty(timeline)
-	def toJson(tweet:TweetFromUser) : String = writePretty(tweet)
-	def toJson(stringList:List[String]) : String = writePretty(stringList)
-	def toJson(followerList:FollowerList) : String = writePretty(FollowerList)
-	
-	
-	
+  
+  //private implicit val formats = Serialization.formats(NoTypeHints)
+  implicit val formats = native.Serialization.formats(ShortTypeHints(List(classOf[Tweet])))
+  def toJson(tweet:Tweet) : String = writePretty(tweet)
+  def toJson(timeline:Timeline) : String = writePretty(timeline)
+  def toJson(tweet:TweetFromUser) : String = writePretty(tweet)
+  def toJson(stringList:List[String]) : String = writePretty(stringList)
+  def toJson(followerList:FollowerList) : String = writePretty(FollowerList)
+  def toJson(searchTimeline:SearchTimeline) : String = writePretty(searchTimeline)
+  
+  
 }
-
-
-

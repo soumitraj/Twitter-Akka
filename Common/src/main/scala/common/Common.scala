@@ -1,4 +1,5 @@
 package common
+import scala.collection.mutable.MutableList
 
 case object Start // local sends to local to start
 case object BindRequest // local worker sends to master
@@ -17,7 +18,7 @@ case class Login(userId:String,password:String)
 case class Timeline(userId:String,tweetList:List[Tweet]) extends Serializable
 case class UserTimeline(timeline:Timeline) extends Serializable
 case class HomeTimeline(timeline:Timeline) extends Serializable
-case class SearchTimeline(timeline:Timeline,pageNo:Int) extends Serializable
+case class SearchTimeline(tweetList:MutableList[String],pageNo:Int) extends Serializable
 case class FollowerList(userId:String,followers:List[String])
 
 case class Follow(sourceId:String, targetId: String)
