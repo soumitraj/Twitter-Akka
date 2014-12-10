@@ -33,3 +33,6 @@ http://localhost:8080/statuses/home_timeline?id=uid1
 
 Search Timeline for a token
 http://localhost:8080/search?searchString=Twitter
+
+
+Spray Deployment Instructions:
