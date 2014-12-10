@@ -82,4 +82,20 @@ For distributed client-server EXECUTION,
 
   To stop 
  * To stop server, press CTRL+C
+ 
+TO RUN ON THE LINUX MACHINES PROVIDED:
+* Use putty and type pcluster.cise.ufl.edu and port number 2222 for machine p2, the ip for this is 192.168.1.2
+* Enter your gatorlink as username and gatorid as password
+* Use 'git clone' to clone the Twitter repository into the machine
+* You can access this folder through WinSCP to create and add common jar files to the folders
+* Change the application.conf files of Server, Client and RestAPI servers to include ip address 192.168.1.2
+* Change the MyServer.scala file in RestAPI folder, to replace 'localhost' with 192.168.1.2 and port number 8080 with 8081(optional)
+* Start the Server and RestAPIServer on p2
+* sbt "run 5" on server and sbt "run 192.168.1.2" on RestAPIServer
+* In the same way, start another machine p3 from putty, using 2322 as port number, the ip for this is 192.168.1.3
+* From this machine p3, we can run the curl commands to access p2 machine such as:
+* curl "http://192.168.1.2/8081/serach?searchString=Hello"
+
+
+
        
