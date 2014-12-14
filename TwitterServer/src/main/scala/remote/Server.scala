@@ -413,9 +413,10 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
  			}
 
  			if(outermap.contains(token)){
-       			if((outermap(token)(x).size/100) > 0)
-           			x += 1
-    			
+ 				if(outermap(token).contains(x)) {
+       				if((outermap(token)(x).size/100) > 0)
+           				x += 1
+    			}
     			if(outermap(token).contains(x)) {
     				outermap(token)(x) += tweet.tweet
 
