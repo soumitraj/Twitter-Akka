@@ -33,10 +33,9 @@ object Local {
 		val profileobj3 = new Profile(200, 0.2, 10, 0.5, 10, 10, 10)
 		val profileobj4 = new Profile(100, 0.1, 10, 0.5, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
-	//	val profiles = List(profileobj1)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 10000
+		val totalusers: Int = 100
 
 		var i: Int = 0
 		var j: Int = 0
@@ -59,9 +58,7 @@ object Local {
     				val clientId = "Client"+Random.nextInt(50000)
 				val username = clientId+j
  				val userActor = system.actorOf(Props(new UserActor(remote,profiles(i),
- 					      totalusers,username ,j,clientId)), 
- 				          name = username)  // the user actor
- 		 		//userActor ! Start                       // start the action
+ 					      totalusers,username ,j,clientId)), name = username)  // the user actor
 				userActor ! Register(username, username, "password")
 			}
 		}
@@ -73,182 +70,134 @@ object Local {
 class UserActor(remote: ActorRef, profileobj: Profile, totalusers: Int,
 	userId: String, j: Int,clientId:String) extends Actor {
 
-// create the remote actor
-
-var counter = 0
-
-//var tweet: String = Random.nextString(140)
-val tweet:String = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Utenimad minim."
-var senderId: String = userId
-val time: Long = System.currentTimeMillis
-
-var sourceId: String = userId
-var targetId: String = _ 
-var userTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
-var homeTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
-var mentionTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
-
-var tempcount: Int = _
-var tempcount2: Int = 0
-//var followercount: Int = 5 
-
-var followingcountrate: Double = profileobj.followingcountrate
-var numberoftweetsperhour: Double = profileobj.numberoftweetsperhour
-
-//var Idmap = scala.collection.mutable.HashMap[String, Int]()
-//var x: Int = 0
-var Id: Int = 0
 
 
-var m: Int = _
-var k: Int = 0
+	//var tweet: String = Random.nextString(140)
+	val tweet:String = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Utenimad minim."
+	var senderId: String = userId
+	val time: Long = System.currentTimeMillis
 
-var userFullName: String = _
-var password: String = _
-
-
-//implicit val system = ActorSystem("LocalSystem")
-var tweetschedulor:akka.actor.Cancellable = _
-var userTimelineschedulor:akka.actor.Cancellable = _
-var homeTimelineschedulor:akka.actor.Cancellable = _
-var mentionTimelineschedulor:akka.actor.Cancellable = _
-var userFollowingschedulor:akka.actor.Cancellable = _
+	var sourceId: String = userId
+	var targetId: String = _ 
+	var userTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
+	var homeTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
+	var mentionTimelineRefreshrate: Double = profileobj.userTimelineRefreshrate
 
 
-    
-    var timepertweet = 60*60/numberoftweetsperhour          // in seconds
-    tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
- //   tweetschedulor.cancel()
+	var followingcountrate: Double = profileobj.followingcountrate
+	var numberoftweetsperhour: Double = profileobj.numberoftweetsperhour
+
+	var Id: Int = 0
 	
-//	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate seconds, self, "updateUserTimeline")
+	
 
-//	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate seconds, self, "updateHomeTimeline")
+	var userFullName: String = _
+	var password: String = _
+	
+	
+	var tweetschedulor:akka.actor.Cancellable = _
+	var userTimelineschedulor:akka.actor.Cancellable = _
+	var homeTimelineschedulor:akka.actor.Cancellable = _
+	var mentionTimelineschedulor:akka.actor.Cancellable = _
+	var userFollowingschedulor:akka.actor.Cancellable = _
 
-//	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelineRefreshrate millis, self, "updateMentionTimeline")
-
+	//start schedulers to send requests to clients based on the request rates specified in the profile.
+    
+     var timepertweet = 60*60/numberoftweetsperhour          // in seconds
+ 
+     tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
+	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate seconds, self, "updateUserTimeline")
+	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate seconds, self, "updateHomeTimeline")
+	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelineRefreshrate millis, self, "updateMentionTimeline")
 	userFollowingschedulor = context.system.scheduler.schedule(5000 millis, 30000 millis, self, "followmessage")
 
 
-def receive = {
-  	case RemoteDetail(remoteActorString) =>
-		println("Details recieved : "+remoteActorString)
-		val remote2 = context.actorFor(remoteActorString)
-		println("sending bind request to remote")
-		remote ! BindRequest
-   	case Start =>
-     //   remote ! Message("Hello from the LocalActor")
-//        remote ! BindRequest 
-    case BindOK =>
-      //  sender ! RequestWork
-
-    // register users
-	case Register(userFullName,userId,password) =>
-	{
-		remote ! Register(userFullName, userId, password)
-		//self ! RegistrationOK
-	}
-	
-	case RegistrationOK =>
-	{
-		remote ! Login(userId, password)
-		//self ! LoginOK
-	}
-
-
-	// login users
-	case LoginOK =>
-	{	
-		var followingcountrate = userTimelineRefreshrate * 1000    // convert to millis
-    		
- 	//	userFollowingschedulor.cancel()
-	}  
-
-    case "followmessage" =>
-    {
-    	Id = Random.nextInt(totalusers + 1)
-    	while(Id == 0){
-    		Id = Random.nextInt(totalusers + 1)
-    	}
-    	targetId = clientId + Id
-    	println("Follow :"+ sourceId + " -> " +targetId)
-    	//remote ! FetchUserToFollow(sourceId,Id)
-    	remote ! Follow(sourceId, targetId)
-   
-    }
-    
-    case Follow(sourceId,targetUserId) => {
-    		//println(Follow(sourceId,targetUserId))
-    	 remote ! Follow(sourceId,targetUserId)
-    
-    }
-
-/*    case FollowingAcceptedOK =>
-	{
-	/*	tempcount += 1
-    	if(tempcount == followingcount)
+	def receive = {
+  		
+	    // register users
+		case Register(userFullName,userId,password) =>
 		{
-			
-			userFollowingschedulor.cancel()
-		}  */
-	} 
-*/
+			remote ! Register(userFullName, userId, password)
+		}
+		
+		case RegistrationOK =>
+		{
+			remote ! Login(userId, password)
+		}
+	
+	
+		// login users
+		case LoginOK =>
+		{	
+			var followingcountrate = userTimelineRefreshrate * 1000    // convert to millis
+    			
+ 		//	userFollowingschedulor.cancel()
+		}  
+	
+    		case "followmessage" =>
+    		{
+		    	Id = Random.nextInt(totalusers + 1)
+	
+			// if the random generated USerID is 0 then generate again
+		    	while(Id == 0){
+    				Id = Random.nextInt(totalusers + 1)
+		    	}
+   
+		    	targetId = clientId + Id
+		    	remote ! Follow(sourceId, targetId)
+		   
+	    }
+    
+	    case Follow(sourceId,targetUserId) => {
+    			 remote ! Follow(sourceId,targetUserId)
+	    }
+	
+	    case "tickTweet" => 
+		{
+    			remote ! TweetFromUser(tweet,senderId,time)
+	    } 	
+
+		case TweetProcessedOK =>
+		{
+
+		}	
 
 
+		case "updateUserTimeline" =>
+		{
+			remote ! UpdateUserTimeline(userId)
+		}
+	
 
-    case "tickTweet" => 
-	{
-    	remote ! TweetFromUser(tweet,senderId,time)
-    } 	
+		case "updateHomeTimeline" =>
+		{
+			remote ! UpdateHomeTimeline(userId)
+		}
 
-    // send the generated random tweets to the server	
- /*   case TweetFromUser(tweet,senderId,time) => 
-    {
-    // send tweet message	
-    	remote ! TweetFromUser(tweet, senderId, time)
-	}
-*/
-
-	case TweetProcessedOK =>
-	{
-
-	}
-
-
-	case "updateUserTimeline" =>
-	{
-		remote ! UpdateUserTimeline(userId)
-		remote ! UpdateSearchTimeline("uid1", "Lorem")
-	}
-
-	case "updateHomeTimeline" =>
-	{
-		remote ! UpdateHomeTimeline(userId)
-	}
-
-	case "updateMentionTimeline" =>
-	{
-		remote ! UpdateUserTimeline(userId)
-	}
-
-
-	case UserTimeline(userTimeline) =>
-	{
-		//println("User Timeline Tweets recieved :"+userTimeline.tweetList.size)
-	}
-
-	case HomeTimeline(homeTimeline) =>
-	{
-		//println("Home Timeline Tweets recieved :"+homeTimeline.tweetList.size)
-	}
+		case "updateMentionTimeline" =>
+		{
+			remote ! UpdateUserTimeline(userId)
+		}
+	
+		case UpdateSearchTimeline(userId, searchToken) =>
+		{
+			remote ! UpdateSearchTimeline(userId, searchToken)
+		}
+	
+	
+		case UserTimeline(userTimeline) =>
+		{
+			//println("User Timeline Tweets recieved :"+userTimeline.tweetList.size)
+		}
+	
+		case HomeTimeline(homeTimeline) =>
+		{
+			//println("Home Timeline Tweets recieved :"+homeTimeline.tweetList.size)
+		}
 	 
-    case Message(msg) => 
-       // println(s"LocalActor received message: '$msg'")
-        if (counter < 5) {
-            sender ! Message("Hello back to you")
-            counter += 1
-        }
-    case _ =>
-        println("LocalActor got something unexpected.")
-  }
+        
+	    case _ =>
+     	   println("LocalActor got something unexpected.")
+	  }
 
 }

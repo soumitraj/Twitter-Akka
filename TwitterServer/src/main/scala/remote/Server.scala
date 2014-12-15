@@ -12,16 +12,14 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.ArrayList
 import scala.collection.mutable.MutableList
-
 import java.security.MessageDigest
 import akka.routing.RoundRobinRouter
-
-//   import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashMap
 import scala.collection.JavaConversions._
 import common._
 
 
-//Added by Stuti
+
 //case class ServerStatistics(userId : String, keyValue: HashMap[Tweet, Int] )
 case class PrintStat(actorName:String, count: Int)
 case class PrintUserStat(actorName:String, count: Int)
@@ -46,7 +44,9 @@ case class TokenizeTweet(tweet:Tweet)
 case class PutTweetAgainstToken(token:String,tweet:Tweet)
 case class GetTweetsAgainstToken(token:String)
 case class SearchToken(token:String)
+
 case object PrintStatistics
+
 case class SentMessages(sourceId: String, tagretId: String, message: String)
 case class PutSentMessages(sourceId:String, tagretId: String, message:String)
 case class PutReceivedMessages(targetId:String, sourceId:String, message:String)
@@ -60,45 +60,41 @@ case class RemoveFollowerToUser(targetId:String, followerid:String)
 
 object TwitterServer {
 
-def main(args : Array[String]){
+	def main(args : Array[String]){
+	
+	val nrOfWorkers = java.lang.Integer.parseInt(args(0))
+	val system = ActorSystem("BtcMasterSystem")
+	val listener = system.actorOf(Props[Listener], name = "listener")
+	
+	
+	// mappings for Hashconsistent routing
+	def hashMapping: ConsistentHashMapping = {
+		case Entry(key, _) => key
+		case s: String => s
+		case PutTweetHomeTimline(userid,tweet) => userid
+		case PutTweetUserTimline(userid,tweet) => userid
+		case PutFollowerToUser(targetId,followerid) => targetId
+		case PutTweet(tweetid,tweet) => tweetid
+		case GetHomeTimeline(userid) => userid
+		case GetUserTimeline(userid) => userid
+		case GetFollowerList(userid) => userid
+		case PutSentMessages(sourceId, targetId,message) => sourceId
+		case PutReceivedMessages(targetId, sourceId, message) => targetId
+		case RemoveFollowerToUser(targetId, followerid) => targetId
+		case GetTweetById(tweetId) => tweetId
+		case DeleteTweetById(tweetId) => tweetId
+		case PutTweetAgainstToken(token,tweet) => token
+		case GetTweetsAgainstToken(token) => token
+		case UserDetails(userId, userName, password) => userId
+	}
 
-//implicit val timeout = akka.util.Timeout(500)
-//println("Scala version :: "+scala.util.Properties.versionString)
-  
-
-val nrOfWorkers = java.lang.Integer.parseInt(args(0))
-val system = ActorSystem("BtcMasterSystem")
-val listener = system.actorOf(Props[Listener], name = "listener")
-
-
-def hashMapping: ConsistentHashMapping = {
-case Entry(key, _) => key
-case s: String => s
-case PutTweetHomeTimline(userid,tweet) => userid
-case PutTweetUserTimline(userid,tweet) => userid
-case PutFollowerToUser(targetId,followerid) => targetId
-case PutTweet(tweetid,tweet) => tweetid
-case GetHomeTimeline(userid) => userid
-case GetUserTimeline(userid) => userid
-case GetFollowerList(userid) => userid
-case PutSentMessages(sourceId, targetId,message) => sourceId
-case PutReceivedMessages(targetId, sourceId, message) => targetId
-case RemoveFollowerToUser(targetId, followerid) => targetId
-case GetTweetById(tweetId) => tweetId
-case DeleteTweetById(tweetId) => tweetId
-case PutTweetAgainstToken(token,tweet) => token
-case GetTweetsAgainstToken(token) => token
-case UserDetails(userId, userName, password) => userId
-}
-
-
-//val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
-val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(5*nrOfWorkers, hashMapping = hashMapping)),name = "cache")
-
-val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(RoundRobinRouter(10*nrOfWorkers)),name="parser")
-//val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
-
-val masterActor = system.actorOf(Props(new Master(10, listener,cache, parser)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
+	//val cache = system.actorOf(Props[Cache].withRouter(ConsistentHashingRouter(10, hashMapping = hashMapping)),name = "cache")
+	val cache = system.actorOf(Props(new Cache(listener)).withRouter(ConsistentHashingRouter(5*nrOfWorkers, hashMapping = hashMapping)),name = "cache")
+	
+	val parser = system.actorOf(Props(new TweetParser(listener,cache)).withRouter(RoundRobinRouter(10*nrOfWorkers)),name="parser")
+	
+	//val masterActor = system.actorOf(Props(new Master(nrOfWorkers, listener,cache)),name = "MasterActor")
+	val masterActor = system.actorOf(Props(new Master(10, listener,cache, parser)).withRouter(RoundRobinRouter(nrOfWorkers)), name = "MasterActor")
 
 	  masterActor ! Start 
 	  masterActor ! Message("The Master is alive and started")
@@ -109,25 +105,26 @@ val masterActor = system.actorOf(Props(new Master(10, listener,cache, parser)).w
        masterActor !  TweetFromUser("Hello Tuesday","uid1",System.currentTimeMillis) 
 	
 
-	masterActor ! PrintStatistics
-	masterActor ! Register("user2","uid2","pswd")
-	masterActor ! Login("uid2","pswd")
-	masterActor ! Follow("uid2","uid1")
-    masterActor !  TweetFromUser("Hello Twitter","uid1",System.currentTimeMillis) 
+	  masterActor ! PrintStatistics
+       masterActor ! Register("user2","uid2","pswd")
+	  masterActor ! Login("uid2","pswd")
+       masterActor ! Follow("uid2","uid1")
+	  masterActor !  TweetFromUser("Hello Twitter","uid1",System.currentTimeMillis) 
     
-    //masterActor ! SentMessages("uid1","uid2", "message")
-    //masterActor ! SentMessages("uid1","uid2", "message")
-    //masterActor ! SentMessages("uid1","uid2", "message")
+    	//masterActor ! SentMessages("uid1","uid2", "message")
+    	//masterActor ! SentMessages("uid1","uid2", "message")
+    	//masterActor ! SentMessages("uid1","uid2", "message")
 	masterActor ! PrintStatistics
 	masterActor ! GetTweetById("ID")
 	//masterActor ! UnFollow("uid2","uid1")
 	masterActor ! UpdateSearchTimeline("uid1", "Hello")
-}
+	
+	}
 }
 
 class Worker(cacheRouter: ActorRef, parser: ActorRef) extends Actor {
-
-implicit val timeout = akka.util.Timeout(500000)
+	
+	implicit val timeout = akka.util.Timeout(500000)
 
 	def receive = {
 		case ProcessTweet(tweet,senderId,time) ⇒
@@ -189,7 +186,7 @@ implicit val timeout = akka.util.Timeout(500000)
 
 class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser: ActorRef)
 	extends Actor {
-	implicit val timeout = akka.util.Timeout(5000)
+	implicit val timeout = akka.util.Timeout(5000000)
 		var nrOfResults: Int = _
 		var nrOfClients: Int = _
 		val start: Long = System.currentTimeMillis
@@ -307,7 +304,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 			}
 			
 			case UpdateSearchTimeline(userId,searchToken) => {	
-				Thread.sleep(5000)
+				//Thread.sleep(5000)
 				val future = cacheRouter ? GetTweetsAgainstToken(searchToken)
 				val searchTimeline = Await.result(future, timeout.duration).asInstanceOf[SearchTimeline]
 			//	println("searchtimeline" + "->" + searchTimeline)
