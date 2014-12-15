@@ -366,7 +366,8 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 
 	val tweetcount=0;
 	var userDetailsMap = new scala.collection.mutable.HashMap[String,UserDetails]
-	var userArrayList = new java.util.ArrayList[String]()
+	//var userArrayList = new java.util.ArrayList[String]()
+	var userArrayList =  new MutableList[String]()
 
 	var cache = Map.empty[String, String]
 	var iTweetsCount=0;
@@ -391,7 +392,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 		case "sendTweetStats" => 
 		{	val actorName = self.path.name
 			listener ! PrintStat(actorName, tweetsMap.size)
-			listener ! PrintUserStat(actorName, userArrayList.size())
+			listener ! PrintUserStat(actorName, userArrayList.size)
 			listener ! PrintOutUserTweets(actorName,outUserTweetCount)
 			listener ! PrintOutHomeTweets(actorName,outHomeTweetCount)
 			listener ! PrintFollowerCount(actorName,userFollowerMap.foldLeft(0)(_+_._2.size),userFollowerMap.size)
@@ -400,7 +401,8 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 		
 		case UserDetails(userId,userName,password) => {
 			userDetailsMap += (userId -> UserDetails(userId,userName,password))
-			userArrayList.add(userId)
+			userArrayList += userId 
+			//userArrayList.add(userId)
 			//println(userArrayList)
 		}
 		

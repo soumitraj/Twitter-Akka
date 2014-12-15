@@ -36,7 +36,7 @@ object Local {
 	//	val profiles = List(profileobj1)
 
 		val profileCount: Int = profiles.length
-		val totalusers: Int = 100
+		val totalusers: Int = 10000
 
 		var i: Int = 0
 		var j: Int = 0
