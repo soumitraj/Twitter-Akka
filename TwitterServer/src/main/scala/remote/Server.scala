@@ -27,10 +27,10 @@ case class PrintStat(actorName:String, count: Int)
 case class PrintUserStat(actorName:String, count: Int)
 case class PrintOutUserTweets(actorName:String, count: Int)
 case class PrintOutHomeTweets(actorName:String, count: Int)
-case class PrintFollowerCount(actorName:String,count: Int)
+case class PrintFollowerCount(actorName:String,followerCount: Int,userCount:Int)
 
 case class ProcessTweet(tweet:String,uid:String,time:Long)
-case class UserDetails(userId:String, userName:String, homeTimelineLastFetchIndex:Int)
+case class UserDetails(userId:String, userName:String, password:String)
 
 case class PutTweetHomeTimline(userid:String,tweet:Tweet)
 case class PutTweetUserTimline(userid:String,tweet:Tweet)
@@ -88,6 +88,7 @@ case GetTweetById(tweetId) => tweetId
 case DeleteTweetById(tweetId) => tweetId
 case PutTweetAgainstToken(token,tweet) => token
 case GetTweetsAgainstToken(token) => token
+case UserDetails(userId, userName, password) => userId
 }
 
 
@@ -237,9 +238,10 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 					//the client will send the register message, when the server receives the message it will save the details of the user in a map (userId as key and other details as values) that will be used to autheticate the login request.
 					
 					register += (userId -> password)
+					cacheRouter ! UserDetails(userId,userFullName,password)
 					
 					//println(s"$userId registered")
-					sender ! RegistrationOK
+					//sender ! RegistrationOK
 					
 				}
 				
@@ -263,7 +265,8 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 				
 				
 			case Follow(sourceUserId,targetUserId) =>
-				{	if(!sourceUserId.equalsIgnoreCase(targetUserId))
+				{//	println("follow : Source :"+sourceUserId+" Target :"+targetUserId)
+					if(!sourceUserId.equalsIgnoreCase(targetUserId))
 						workerRouter ! Follow(sourceUserId,targetUserId)
 
 				}		
@@ -307,7 +310,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 				Thread.sleep(5000)
 				val future = cacheRouter ? GetTweetsAgainstToken(searchToken)
 				val searchTimeline = Await.result(future, timeout.duration).asInstanceOf[SearchTimeline]
-				println("searchtimeline" + "->" + searchTimeline)
+			//	println("searchtimeline" + "->" + searchTimeline)
 				sender ! searchTimeline
 			}	
 	
@@ -374,12 +377,9 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 	var tokenmap = new scala.collection.mutable.HashMap[String, Int]
 	var x: Int = 1
 
-	//Added by Stuti
 	var getTweetStat:akka.actor.Cancellable = _
 
-	/*val system = ActorSystem("BtcMasterSystem")
-	val listener = system.actorOf(Props[Listener], name = "listener")*/
-//	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
+	getTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "sendTweetStats")
 	
 /*	PrivateMessage(fromUserId:String,toUserId:String, message:Message,time:long)
 	Inbox(userid:String,messageList:List[PrivateMessage])
@@ -388,19 +388,24 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 	def receive = {
 		//implicit val system = ActorSystem("LocalSystem")
 		
-
-
 		case "sendTweetStats" => 
 		{	val actorName = self.path.name
 			listener ! PrintStat(actorName, tweetsMap.size)
-			listener ! PrintUserStat(actorName, userTimelineMap.size)
+			listener ! PrintUserStat(actorName, userArrayList.size())
 			listener ! PrintOutUserTweets(actorName,outUserTweetCount)
 			listener ! PrintOutHomeTweets(actorName,outHomeTweetCount)
-			listener ! PrintFollowerCount(actorName,userFollowerMap.foldLeft(0)(_+_._2.size))
+			listener ! PrintFollowerCount(actorName,userFollowerMap.foldLeft(0)(_+_._2.size),userFollowerMap.size)
 			//iTweetsCount = 0
 		}
 		
+		case UserDetails(userId,userName,password) => {
+			userDetailsMap += (userId -> UserDetails(userId,userName,password))
+			userArrayList.add(userId)
+			//println(userArrayList)
+		}
+		
 		case PutTweetAgainstToken(token,tweet) => {
+		//println("\nPutTweetAgainstToken(token,tweet) :"+PutTweetAgainstToken(token,tweet) ) 
 			// ToDo save the tweet against the token page wise (token -> (pageNo -> TweetList))
 			var tweeterlist = new MutableList[String]()
  			var tweetermap = new scala.collection.mutable.HashMap[Int, MutableList[String]] 
@@ -611,7 +616,7 @@ class Master(nrOfWorkers: Int, listener: ActorRef,cacheRouter: ActorRef, parser:
 				userReceivedMessageMap += (targetId -> newSenderList)
 				/*println("message recieved in cache")
 			userSentMessageMap += (sourceId -> targetId)		
-			println("Message added to the sent mesaage List" + userSentMessageMap)
+		//	println("Message added to the sent mesaage List" + userSentMessageMap)
 			*/
 			//println(userReceivedMessageMap + "  " + self.path.name)
 
@@ -639,7 +644,7 @@ class Listener extends Actor {
 		
 		
 		var printTweetStat:akka.actor.Cancellable = _
-	//	printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
+		printTweetStat = context.system.scheduler.schedule(1000 milliseconds, 10000 milliseconds, self, "printTweetStatistics")
 
 		var totalTweetCount:Int = 0
 		var prevTotalTweetCount:Int = 0
@@ -705,8 +710,9 @@ class Listener extends Actor {
 
 		case PrintUserStat(actorName, count) => {
 			//println("TweetCount is " + count + " " + actorName)
-			totalUserCount += count
+			//totalUserCount += count
 			statUserCount += (actorName -> count)
+//			println("\nstatUserCount : "+statUserCount)
 		}
 		
 		case PrintOutUserTweets(actorName,count) => {
@@ -717,8 +723,9 @@ class Listener extends Actor {
 			outHomeTweetCountMap += (actorName -> count)
 		}
 		
-		case PrintFollowerCount(actorName,count) => {
-			followerCountMap += (actorName -> count)
+		case PrintFollowerCount(actorName,fcount,ucount) => {
+			//println(PrintFollowerCount(actorName,fcount,ucount))
+			followerCountMap += (actorName -> fcount)
 		}
 	}
 }

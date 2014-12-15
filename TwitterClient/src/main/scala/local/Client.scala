@@ -28,10 +28,10 @@ object Local {
 		// println("Argument 0 :"+ args(0))
 		val serverIP = args(0)
 		val serverPort = "5150"
-		val profileobj1 = new Profile(40000, 0.4, 100, 1, 30, 30, 30)
-		val profileobj2 = new Profile(30000, 0.3, 60, 1, 20, 20, 20)
-		val profileobj3 = new Profile(20000, 0.2, 10, 0.5, 10, 10, 10)
-		val profileobj4 = new Profile(10000, 0.1, 10, 0.5, 10, 10, 10) 
+		val profileobj1 = new Profile(400, 0.4, 100, 1, 30, 30, 30)
+		val profileobj2 = new Profile(300, 0.3, 60, 1, 20, 20, 20)
+		val profileobj3 = new Profile(200, 0.2, 10, 0.5, 10, 10, 10)
+		val profileobj4 = new Profile(100, 0.1, 10, 0.5, 10, 10, 10) 
 		val profiles = List(profileobj1, profileobj2, profileobj3, profileobj4)
 	//	val profiles = List(profileobj1)
 
@@ -56,40 +56,22 @@ object Local {
   			percentusers = profiles(i).percentageusers
 			profileusers = profileusers + (percentusers * totalusers).toInt  
     		for(j <- prev to profileusers)	{
-				val username = "user"+j
+    				val clientId = "Client"+Random.nextInt(50000)
+				val username = clientId+j
  				val userActor = system.actorOf(Props(new UserActor(remote,profiles(i),
- 					      totalusers,"user"+j+Random.nextInt(50000) ,j)), 
+ 					      totalusers,username ,j,clientId)), 
  				          name = username)  // the user actor
  		 		//userActor ! Start                       // start the action
-				//userActor ! Register(username, username, "password")
+				userActor ! Register(username, username, "password")
 			}
 		}
 	}
 
 }
 
-/*
-class Worker extends Actor {
-	
-	def receive = {
-			
-	}
-}
- 
-class LocalMaster(nrOfWorkers: Int, nrOfMessages: Int, nrOfElements: Int,compString:String, listener: ActorRef)
-extends Actor {
- 
-	val workerRouter = context.actorOf(
-	Props[Worker].withRouter(RoundRobinRouter(nrOfWorkers)), name = "workerRouter")
- 
-	def receive = {		
-		} 
-	}
-}
-*/
-	
+
 class UserActor(remote: ActorRef, profileobj: Profile, totalusers: Int,
-	userId: String, j: Int) extends Actor {
+	userId: String, j: Int,clientId:String) extends Actor {
 
 // create the remote actor
 
@@ -138,13 +120,13 @@ var userFollowingschedulor:akka.actor.Cancellable = _
     tweetschedulor = context.system.scheduler.schedule(10000 millis, timepertweet seconds, self, "tickTweet")
  //   tweetschedulor.cancel()
 	
-	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate seconds, self, "updateUserTimeline")
+//	userTimelineschedulor = context.system.scheduler.schedule(10000 millis, userTimelineRefreshrate seconds, self, "updateUserTimeline")
 
-	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate seconds, self, "updateHomeTimeline")
+//	homeTimelineschedulor = context.system.scheduler.schedule(10000 millis, homeTimelineRefreshrate seconds, self, "updateHomeTimeline")
 
 //	mentionTimelineschedulor = context.system.scheduler.schedule(10000 millis, mentionTimelineRefreshrate millis, self, "updateMentionTimeline")
 
-	userFollowingschedulor = context.system.scheduler.schedule(5000 millis, 5000 millis, self, "followmessage")
+	userFollowingschedulor = context.system.scheduler.schedule(5000 millis, 30000 millis, self, "followmessage")
 
 
 def receive = {
@@ -187,10 +169,10 @@ def receive = {
     	while(Id == 0){
     		Id = Random.nextInt(totalusers + 1)
     	}
-    	targetId = "user" + Id
-    //	println("Follow :"+ sourceId + " -> " +targetId)
-    	remote ! FetchUserToFollow(sourceId,Id)
-    	//remote ! Follow(sourceId, targetId)
+    	targetId = clientId + Id
+    	println("Follow :"+ sourceId + " -> " +targetId)
+    	//remote ! FetchUserToFollow(sourceId,Id)
+    	remote ! Follow(sourceId, targetId)
    
     }
     
