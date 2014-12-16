@@ -1,0 +1,55 @@
+}stutijoshi@p4:~$ ab -n 10000 -c 1000 -r -s 6000 'http://192.168.1.4:8084/followers/ids?userid=u1'
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 192.168.1.4 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:        spray-can/1.3.1
+Server Hostname:        192.168.1.4
+Server Port:            8084
+
+Document Path:          /followers/ids?userid=u1
+Document Length:        6 bytes
+
+Concurrency Level:      1000
+Time taken for tests:   36.651 seconds
+Complete requests:      10000
+Failed requests:        231
+   (Connect: 0, Receive: 77, Length: 77, Exceptions: 77)
+Total transferred:      1458681 bytes
+HTML transferred:       59538 bytes
+Requests per second:    272.84 [#/sec] (mean)
+Time per request:       3665.134 [ms] (mean)
+Time per request:       3.665 [ms] (mean, across all concurrent requests)
+Transfer rate:          38.87 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    8  65.3      0    1000
+Processing:    96 3519 983.8   3326   10273
+Waiting:        0 3480 1022.0   3271   10273
+Total:        147 3526 989.9   3337   10273
+
+Percentage of the requests served within a certain time (ms)
+  50%   3337
+  66%   3937
+  75%   4056
+  80%   4427
+  90%   5007
+  95%   5090
+  98%   5229
+  99%   5522
+ 100%  10273 (longest request)

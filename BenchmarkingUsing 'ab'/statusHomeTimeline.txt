@@ -1,0 +1,54 @@
+stutijoshi@p4:~$ ab -n 10000 -c 1000 -r -s 6000 'http://192.168.1.4:8084/statuses/home_timeline?id=u1'
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 192.168.1.4 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:        spray-can/1.3.1
+Server Hostname:        192.168.1.4
+Server Port:            8084
+
+Document Path:          /statuses/home_timeline?id=u1
+Document Length:        45 bytes
+
+Concurrency Level:      1000
+Time taken for tests:   28.823 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      1870000 bytes
+HTML transferred:       450000 bytes
+Requests per second:    346.95 [#/sec] (mean)
+Time per request:       2882.267 [ms] (mean)
+Time per request:       2.882 [ms] (mean, across all concurrent requests)
+Transfer rate:          63.36 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0  124 508.9      0    3008
+Processing:   115 2623 608.4   2754    5416
+Waiting:      115 2623 608.4   2754    5416
+Total:        157 2747 750.9   2787    7519
+
+Percentage of the requests served within a certain time (ms)
+  50%   2787
+  66%   2950
+  75%   3032
+  80%   3073
+  90%   3172
+  95%   3240
+  98%   5478
+  99%   5823
+ 100%   7519 (longest request)

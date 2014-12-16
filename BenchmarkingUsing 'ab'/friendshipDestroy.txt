@@ -1,0 +1,55 @@
+stutijoshi@p4:~$ curl 'http://192.168.1.4:8084/friendship/destroy?sourceId=u3&targetId=u1'
+Friendship destroyed betweenSome(u3)and u1stutijoshi@p4:~$ ab -n 10000 -c 1000 -r -s 6000 'http://192.168.1.4:8084/friendship/destroy?sourceId=u3&targetId=u1'
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 192.168.1.4 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:        spray-can/1.3.1
+Server Hostname:        192.168.1.4
+Server Port:            8084
+
+Document Path:          /friendship/destroy?sourceId=u3&targetId=u1
+Document Length:        42 bytes
+
+Concurrency Level:      1000
+Time taken for tests:   4.332 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      1840000 bytes
+HTML transferred:       420000 bytes
+Requests per second:    2308.15 [#/sec] (mean)
+Time per request:       433.247 [ms] (mean)
+Time per request:       0.433 [ms] (mean, across all concurrent requests)
+Transfer rate:          414.75 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0  157 542.8      1    3008
+Processing:     5   76 249.3     32    3306
+Waiting:        4   75 249.3     31    3306
+Total:         10  232 671.7     33    4305
+
+Percentage of the requests served within a certain time (ms)
+  50%     33
+  66%     43
+  75%     53
+  80%     65
+  90%    448
+  95%   1300
+  98%   3214
+  99%   3427
+ 100%   4305 (longest request)

@@ -1,0 +1,54 @@
+stutijoshi@p4:~$ ab -n 10000 -c 1000 -r -s 6000 'http://192.168.1.4:8084/friendship/add?sourceId=u1&targetId=u5'
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 192.168.1.4 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:        spray-can/1.3.1
+Server Hostname:        192.168.1.4
+Server Port:            8084
+
+Document Path:          /friendship/add?sourceId=u1&targetId=u5
+Document Length:        38 bytes
+
+Concurrency Level:      1000
+Time taken for tests:   4.693 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      1800000 bytes
+HTML transferred:       380000 bytes
+Requests per second:    2130.80 [#/sec] (mean)
+Time per request:       469.308 [ms] (mean)
+Time per request:       0.469 [ms] (mean, across all concurrent requests)
+Transfer rate:          374.55 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0  147 502.4      1    3005
+Processing:     5   73 152.7     36    1660
+Waiting:        3   72 152.7     35    1660
+Total:          8  220 613.3     39    4664
+
+Percentage of the requests served within a certain time (ms)
+  50%     39
+  66%     57
+  75%     72
+  80%     87
+  90%   1015
+  95%   1250
+  98%   3092
+  99%   3658
+ 100%   4664 (longest request)

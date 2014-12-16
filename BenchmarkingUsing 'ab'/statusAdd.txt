@@ -1,0 +1,54 @@
+stutijoshi@p4:~$ ab -n 10000 -c 1000 -r -s 6000 'http://192.168.1.4:8084/status/add?tweetText=GoodMorning&senderId=u1'
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 192.168.1.4 (be patient)
+Completed 1000 requests
+Completed 2000 requests
+Completed 3000 requests
+Completed 4000 requests
+Completed 5000 requests
+Completed 6000 requests
+Completed 7000 requests
+Completed 8000 requests
+Completed 9000 requests
+Completed 10000 requests
+Finished 10000 requests
+
+
+Server Software:        spray-can/1.3.1
+Server Hostname:        192.168.1.4
+Server Port:            8084
+
+Document Path:          /status/add?tweetText=GoodMorning&senderId=u1
+Document Length:        85 bytes
+
+Concurrency Level:      1000
+Time taken for tests:   3.757 seconds
+Complete requests:      10000
+Failed requests:        0
+Total transferred:      2270000 bytes
+HTML transferred:       850000 bytes
+Requests per second:    2661.51 [#/sec] (mean)
+Time per request:       375.726 [ms] (mean)
+Time per request:       0.376 [ms] (mean, across all concurrent requests)
+Transfer rate:          590.00 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0  129 337.5      1    3004
+Processing:     5  120 181.4     40    1699
+Waiting:        4  119 181.3     39    1698
+Total:         10  249 393.9     48    3280
+
+Percentage of the requests served within a certain time (ms)
+  50%     48
+  66%    164
+  75%    349
+  80%    456
+  90%   1020
+  95%   1054
+  98%   1253
+  99%   1439
+ 100%   3280 (longest request)
