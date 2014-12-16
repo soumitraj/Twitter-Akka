@@ -1,8 +1,3 @@
-                   README – DOS PROJECT 4 - Part 1
-TEAM MEMBERS: 
-Name: Soumitra Siddharth Johri    UFID: 94654015
-Name: Nithin K Vadyala            UFID: 23716353
-Name: Stuti Joshi                 UFID: 20359439 
 
 Twitter-Akka
 ============
